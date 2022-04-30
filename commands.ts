@@ -93,8 +93,8 @@ export const COMMANDS = {
         DESCRIPTION: "Displays all valid players one can vote for",
       },
       PLAYER: {
-        COMMAND: "!vote <PLAYER> <TICKETS>",
-        DESCRIPTION: "Displays all valid players one can vote for",
+        COMMAND: "!vote <PLAYER ID> <TICKETS>",
+        DESCRIPTION: "Vote for a player with your tickets",
       },
     },
   },
@@ -103,11 +103,11 @@ export const COMMANDS = {
     DESCRIPTION: "Parent command for power ups",
     SUBCOMMANDS: {
       CHECK_TICK: {
-        COMMAND: "!pop checktick <PLAYER>",
+        COMMAND: "!pop checktick <PLAYER ID>",
         DESCRIPTION: "Displays tickets on a player",
       },
       MUTE: {
-        COMMAND: "!pop mute <PLAYER>",
+        COMMAND: "!pop mute <PLAYER ID>",
         DESCRIPTION: "Mutes a player for a minute"
       },
       PRIO_SPK: {
@@ -138,10 +138,8 @@ export function HandleCommand(message: Message) {
   if (MessageToCommand(message) === COMMANDS.ROOM.COMMAND) {
     FindRoom(message);
   }
-sdf
-  if (MessageToCommand(message) === COMMANDS.TRAVEL.COMMAND) {
-    if (game.state === GameStateType.READY)
 
+  if (MessageToCommand(message) === COMMANDS.TRAVEL.COMMAND) {
     HandleTravel(message);
   }
 
@@ -164,13 +162,13 @@ export function MessageLength(message: Message) {
 
 function handleCommands(message: Message) {
   switch (message.content) {
-    case COMMANDS.HELP.COMMAND + " " + COMMANDS.HELP.SUBCOMMANDS.TRAVEL.COMMAND:
+    case COMMANDS.HELP.SUBCOMMANDS.TRAVEL.COMMAND:
       help(message, COMMANDS.TRAVEL.SUBCOMMANDS);
       break;
-    case COMMANDS.HELP.COMMAND + " " + COMMANDS.HELP.SUBCOMMANDS.VOTE.COMMAND:
+    case COMMANDS.HELP.SUBCOMMANDS.VOTE.COMMAND:
       help(message, COMMANDS.VOTE.SUBCOMMANDS);
       break;
-    case COMMANDS.HELP.COMMAND + " " + COMMANDS.HELP.SUBCOMMANDS.POWERUP.COMMAND:
+    case COMMANDS.HELP.SUBCOMMANDS.POWERUP.COMMAND:
       help(message, COMMANDS.POWERUP.SUBCOMMANDS);
       break;
     case COMMANDS.HELP.COMMAND:

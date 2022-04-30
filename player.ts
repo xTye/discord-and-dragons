@@ -54,6 +54,9 @@ export async function JoinGame(message: Message) {
       travel: {
         location: graph.dragonsLair.channel,
         destination: graph.dragonsLair.channel,
+        traveling: false,
+        timer: DefaultTimer,
+        timeout: undefined,
       },
       vote: {
         immunity: false,

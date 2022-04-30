@@ -4,7 +4,7 @@ export type Player = {
   playerId: number,
   user: GuildMember,
   channel: TextChannel,
-  acvitity: {
+  activity: {
     active: boolean,
     timer: TimerType,
     timeout: NodeJS.Timeout | undefined,
@@ -12,6 +12,9 @@ export type Player = {
   travel: {
     location: VoiceChannel,
     destination: VoiceChannel,
+    traveling: boolean,
+    timer: TimerType,
+    timeout: NodeJS.Timeout | undefined,
   },
   vote: {
     tickets: number,

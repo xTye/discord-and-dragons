@@ -13,7 +13,7 @@ export function HandleTravel(message: Message) {
 
   let destination: string | null = null;
   let time = false;
-  switch (subcommand[1]){
+  switch (message.content){
     case COMMANDS.TRAVEL.SUBCOMMANDS.MEADOW.COMMAND:
       destination = COMMANDS.TRAVEL.SUBCOMMANDS.MEADOW.COMMAND;
       break;
@@ -48,7 +48,7 @@ async function Travel(player: Player, to: string, message: Message) {
   if (to === COMMANDS.TRAVEL.SUBCOMMANDS.MEADOW.COMMAND && player.travel.location.id === graph.dragonsLair.id) {
     await player.user.voice.setChannel(graph.lairToRed.id);
     player.travel.location = graph.lairToRed.channel;
-    player.acvitity.timer.milliseconds = graph.lairToRed.trvlTime;
+    player.travel.timer.milliseconds = graph.lairToRed.trvlTime;
 
     player.travel.destination = graph.tier1Red.channel;
   }
@@ -57,7 +57,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.VOLCANO.COMMAND && player.travel.location.id === graph.tier1Red.id) {
     await player.user.voice.setChannel(graph.redToRed.id);
     player.travel.location = graph.redToRed.channel;
-    player.acvitity.timer.milliseconds = graph.redToRed.trvlTime;
+    player.travel.timer.milliseconds = graph.redToRed.trvlTime;
 
     player.travel.destination = graph.tier3Red.channel;
   }
@@ -66,7 +66,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.MEADOW.COMMAND && player.travel.location.id === graph.tier3Red.id) {
     await player.user.voice.setChannel(graph.redToRed.id);
     player.travel.location = graph.redToRed.channel;
-    player.acvitity.timer.milliseconds = graph.redToRed.trvlTime;
+    player.travel.timer.milliseconds = graph.redToRed.trvlTime;
 
     player.travel.destination = graph.tier1Red.channel;
   }
@@ -75,7 +75,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.LAIR.COMMAND && player.travel.location.id === graph.tier1Red.id) {
     await player.user.voice.setChannel(graph.lairToRed.id);
     player.travel.location = graph.lairToRed.channel;
-    player.acvitity.timer.milliseconds = graph.lairToRed.trvlTime;
+    player.travel.timer.milliseconds = graph.lairToRed.trvlTime;
 
     player.travel.destination = graph.dragonsLair.channel;
   }
@@ -84,7 +84,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.COASTAL.COMMAND && player.travel.location.id === graph.dragonsLair.id) {
     await player.user.voice.setChannel(graph.lairToBlue.id);
     player.travel.location = graph.lairToBlue.channel;
-    player.acvitity.timer.milliseconds = graph.lairToBlue.trvlTime;
+    player.travel.timer.milliseconds = graph.lairToBlue.trvlTime;
 
     player.travel.destination = graph.tier1Blue.channel;
   }
@@ -93,7 +93,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.OCEAN.COMMAND && player.travel.location.id === graph.tier1Blue.id) {
     await player.user.voice.setChannel(graph.blueToBlue.id);
     player.travel.location = graph.blueToBlue.channel;
-    player.acvitity.timer.milliseconds = graph.blueToBlue.trvlTime;
+    player.travel.timer.milliseconds = graph.blueToBlue.trvlTime;
     
     player.travel.destination = graph.tier3Blue.channel;
   }
@@ -102,7 +102,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.COASTAL.COMMAND && player.travel.location.id === graph.tier3Blue.id) {
     await player.user.voice.setChannel(graph.blueToBlue.id);
     player.travel.location = graph.blueToBlue.channel;
-    player.acvitity.timer.milliseconds = graph.blueToBlue.trvlTime;
+    player.travel.timer.milliseconds = graph.blueToBlue.trvlTime;
 
     player.travel.destination = graph.tier1Blue.channel;
   }
@@ -111,7 +111,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.LAIR.COMMAND && player.travel.location.id === graph.tier1Blue.id) {
     await player.user.voice.setChannel(graph.lairToBlue.id);
     player.travel.location = graph.lairToBlue.channel;
-    player.acvitity.timer.milliseconds = graph.lairToBlue.trvlTime;
+    player.travel.timer.milliseconds = graph.lairToBlue.trvlTime;
 
     player.travel.destination = graph.dragonsLair.channel;
   }
@@ -120,7 +120,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.CAVERN.COMMAND && player.travel.location.id === graph.dragonsLair.id) {
     await player.user.voice.setChannel(graph.lairToYellow.id);
     player.travel.location = graph.lairToYellow.channel;
-    player.acvitity.timer.milliseconds = graph.lairToYellow.trvlTime;
+    player.travel.timer.milliseconds = graph.lairToYellow.trvlTime;
 
     player.travel.destination = graph.tier2Yellow.channel;
   }
@@ -129,7 +129,7 @@ async function Travel(player: Player, to: string, message: Message) {
   else if (to === COMMANDS.TRAVEL.SUBCOMMANDS.LAIR.COMMAND && player.travel.location.id === graph.tier2Yellow.id) {
     await player.user.voice.setChannel(graph.lairToYellow.id);
     player.travel.location = graph.lairToYellow.channel;
-    player.acvitity.timer.milliseconds = graph.lairToYellow.trvlTime;
+    player.travel.timer.milliseconds = graph.lairToYellow.trvlTime;
 
     player.travel.destination = graph.dragonsLair.channel;
   }
@@ -140,34 +140,34 @@ async function Travel(player: Player, to: string, message: Message) {
     return;
   }
 
-  player.acvitity.timer = convertTimer(player.acvitity.timer.milliseconds);
-  await message.reply(`Traveling to ${player.travel.destination.name} from ${player.travel.location.name} across the *rough lands of the island*. It will take ${player.acvitity.timer.minutes} minutes and ${player.acvitity.timer.seconds} seconds to get there. Good Luck!`);
+  player.travel.timer = convertTimer(player.travel.timer.milliseconds);
+  await message.reply(`Traveling to ${player.travel.destination.name} from ${player.travel.location.name} across the *rough lands of the island*. It will take ${player.travel.timer.minutes} minutes and ${player.travel.timer.seconds} seconds to get there. Good Luck!`);
 
   //* Simulate travel
   try {
-    player.acvitity.active = true;
+    player.travel.traveling = true;
     beginTravel(player);
   } catch (err) {
-    player.acvitity.active = false;
+    player.travel.traveling = false;
   }
 }
 
 async function beginTravel(player: Player) {
-  const TRAVEL_TIME = player.acvitity.timer.milliseconds;
+  const TRAVEL_TIME = player.travel.timer.milliseconds;
 
   const interval = setInterval(async () => {
-    player.acvitity.timer = convertTimer(player.acvitity.timer.milliseconds - INCREMENT_MILLIS);
+    player.travel.timer = convertTimer(player.travel.timer.milliseconds - INCREMENT_MILLIS);
   }, INCREMENT_MILLIS);
 
   const timeout = setTimeout(async () => {
     clearInterval(interval);
     player.user.voice.setChannel(player.travel.destination.id);
     player.travel.location = player.travel.destination;
-    player.acvitity.active = false;
-    player.acvitity.timer = DefaultTimer;
+    player.travel.traveling = false;
+    player.travel.timer = DefaultTimer;
   }, TRAVEL_TIME);
 
-  player.acvitity.timeout = timeout;
+  player.travel.timeout = timeout;
 }
 
 export function travelTime(message: Message) {
@@ -179,12 +179,12 @@ export function travelTime(message: Message) {
     message.reply("Not a valid player");
     return;
   }
-  if (player.acvitity.active == false) {
+  if (player.travel.traveling == false) {
     message.reply("Not currently traveling");
     return;
   }
 
-  message.reply(`You have ${player.acvitity.timer.minutes} minutes and ${player.acvitity.timer.seconds} seconds left of travel.`);
+  message.reply(`You have ${player.travel.timer.minutes} minutes and ${player.travel.timer.seconds} seconds left of travel.`);
 }
 
 
@@ -202,8 +202,8 @@ export function canTransit(message: Message) {
     message.reply("Not a valid player");
     return;
   }
-  if (player.acvitity.active) {
-    message.reply("Currently in activity.");
+  if (player.travel.traveling) {
+    message.reply("Currently traveling.");
     return;
   }
 
@@ -214,6 +214,6 @@ export function DragonMove(player: Player) {
   player.user.voice.setChannel(graph.dragonsLair.id);
   player.travel.location = graph.dragonsLair.channel;
   player.travel.destination = graph.dragonsLair.channel;
-  player.acvitity.timer = DefaultTimer;
-  player.acvitity.active = false;
+  player.travel.timer = DefaultTimer;
+  player.travel.traveling = false;
 }
