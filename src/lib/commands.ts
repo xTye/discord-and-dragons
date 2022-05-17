@@ -1,194 +1,189 @@
-import { Message } from "discord.js";
-import { players } from "./conts";
-import { game, Start } from "./game";
-import { FindRoom, GetPlayers, JoinGame } from "./player";
-import { HandlePop } from "./powerUps";
-import { HandleTravel } from "./travel";
-import { GameStateType } from "./types";
-import { HandleVote } from "./vote";
-
 export const COMMANDS = {
   HELP: {
+    NAME: "help",
     COMMAND: "!help",
     DESCRIPTION: "Lists all of the commands",
     SUBCOMMANDS: {
       TRAVEL: {
+        NAME: "travel",
         COMMAND: "!help travel",
         DESCRIPTION: "Displays all travel commands"
       },
       VOTE: {
+        NAME: "vote",
         COMMAND: "!help vote",
         DESCRIPTION: "Displays all vote commands"
       },
       POWERUP: {
+        NAME: "pop",
         COMMAND: "!help pop",
         DESCRIPTION: "Displays all powerup commands"
       },
     },
   },
   JOIN: {
+    NAME: "join",
     COMMAND: "!join",
     DESCRIPTION: "Used to join a game"
   },
   LOBBY: {
+    NAME: "lobby",
     COMMAND: "!lobby",
     DESCRIPTION: "Lists all players in a lobby"
   },
   START: {
+    NAME: "start",
     COMMAND: "!start",
     DESCRIPTION: "Used to join a game"
   },
-  ROOM: {
-    COMMAND: "!room",
-    DESCRIPTION: "Returns the current discord room your in"
-  },
   TIME: {
+    NAME: "time",
     COMMAND: "!time",
     DESCRIPTION: "Returns the time left in the round"
   },
   TRAVEL: {
+    NAME: "travel",
     COMMAND: "!travel",
     DESCRIPTION: "Parent command for all things to do with location",
     SUBCOMMANDS: {
       MEADOW: {
+        NAME: "meadow",
         COMMAND: "!travel meadow",
         DESCRIPTION: "Travel to meadow.",
       },
       VOLCANO: {
+        NAME: "volcano",
         COMMAND: "!travel volcano",
         DESCRIPTION: "Travel to volcano.",
       },
-      COASTAL: {
-        COMMAND: "!travel coastal",
-        DESCRIPTION: "Travel to coastal.",
+      COAST: {
+        NAME: "coast",
+        COMMAND: "!travel coast",
+        DESCRIPTION: "Travel to coast.",
       },
       OCEAN: {
+        NAME: "ocean",
         COMMAND: "!travel ocean",
         DESCRIPTION: "Travel to ocean.",
       },
       CAVERN: {
+        NAME: "cavern",
         COMMAND: "!travel cavern",
         DESCRIPTION: "Travel to cavern.",
       },
       LAIR: {
+        NAME: "lair",
         COMMAND: "!travel lair",
         DESCRIPTION: "Travel to the dragon's lair"
       },
       TIME: {
+        NAME: "time",
         COMMAND: "!travel time",
         DESCRIPTION: "Displays current travel time"
       },
     },
   },
   VOTE: {
+    NAME: "vote",
     COMMAND: "!vote",
     DESCRIPTION: "Parent command for all things to do with voting.",
     SUBCOMMANDS: {
       TICKETS: {
+        NAME: "tickets",
         COMMAND: "!vote tickets",
         DESCRIPTION: "Displays tickets left on you",
       },
       LIST: {
+        NAME: "list",
         COMMAND: "!vote list",
         DESCRIPTION: "Displays all valid players one can vote for",
       },
       PLAYER: {
+        NAME: "player",
         COMMAND: "!vote <PLAYER ID> <TICKETS>",
         DESCRIPTION: "Vote for a player with your tickets",
       },
     },
   },
   POWERUP: {
+    NAME: "pop",
     COMMAND: "!pop",
     DESCRIPTION: "Parent command for power ups",
     SUBCOMMANDS: {
       CHECK_TICK: {
-        COMMAND: "!pop checktick <PLAYER ID>",
+        NAME: "ct",
+        COMMAND: "!pop ct <PLAYER ID>",
         DESCRIPTION: "Displays tickets on a player",
       },
       MUTE: {
+        NAME: "mute",
         COMMAND: "!pop mute <PLAYER ID>",
         DESCRIPTION: "Mutes a player for a minute"
       },
       PRIO_SPK: {
+        NAME: "prio",
         COMMAND: "!pop prio",
         DESCRIPTION: "Grants yourself priority speaking"
       },
     },
   },
-}
-
-export function HandleCommand(message: Message) {
-  if (MessageToCommand(message) === COMMANDS.HELP.COMMAND) {
-    handleCommands(message);
-  }
-
-  if (MessageToCommand(message) ===  COMMANDS.JOIN.COMMAND) {
-    JoinGame(message);
-  }
-
-  if (MessageToCommand(message) === COMMANDS.LOBBY.COMMAND) {
-    GetPlayers(message);
-  }
-
-  if (MessageToCommand(message) === COMMANDS.START.COMMAND) {
-    Start(message);
-  }
-
-  if (MessageToCommand(message) === COMMANDS.ROOM.COMMAND) {
-    FindRoom(message);
-  }
-
-  if (MessageToCommand(message) === COMMANDS.TRAVEL.COMMAND) {
-    HandleTravel(message);
-  }
-
-  if (MessageToCommand(message) === COMMANDS.VOTE.COMMAND) {
-    HandleVote(message);
-  }
-
-  if (MessageToCommand(message) === COMMANDS.POWERUP.COMMAND) {
-    HandlePop(message);
-  }
-}
-
-export function MessageToCommand(message: Message) {
-  return message.content.split(" ")[0];
-};
-
-export function MessageLength(message: Message) {
-  return message.content.split(" ").length;
-};
-
-function handleCommands(message: Message) {
-  switch (message.content) {
-    case COMMANDS.HELP.SUBCOMMANDS.TRAVEL.COMMAND:
-      help(message, COMMANDS.TRAVEL.SUBCOMMANDS);
-      break;
-    case COMMANDS.HELP.SUBCOMMANDS.VOTE.COMMAND:
-      help(message, COMMANDS.VOTE.SUBCOMMANDS);
-      break;
-    case COMMANDS.HELP.SUBCOMMANDS.POWERUP.COMMAND:
-      help(message, COMMANDS.POWERUP.SUBCOMMANDS);
-      break;
-    case COMMANDS.HELP.COMMAND:
-      help(message, COMMANDS);
-      break;
-  }
-}
-
-function help(message: Message, obj: Object) {
-  let s = "```\n"
-  Object.entries(obj).forEach(([key, value]) => {
-    s += `${value.COMMAND} === ${value.DESCRIPTION}\n`
-
-    if (value.COMMAND === COMMANDS.HELP.COMMAND) {
-      Object.entries(COMMANDS.HELP.SUBCOMMANDS).forEach(([subkey, subvalue]) => {
-        s += `\t${subvalue.COMMAND} === ${subvalue.DESCRIPTION}\n`
-      });
+  REGION: {
+    NAME: "region",
+    COMMAND: "!region",
+    DESCRIPTION: "Parent command for region",
+    SUBCOMMANDS: {
+      ROOM: {
+        NAME: "room",
+        COMMAND: "!region room",
+        DESCRIPTION: "Returns the current discord room your in"
+      },
+      PLAY: {
+        NAME: "play",
+        COMMAND: "!region play <HELPEE or HELPER>",
+        DESCRIPTION: "Play as the helpee or helper",
+      },
+      VOTE: {
+        NAME: "vote",
+        COMMAND: "!region vote",
+        DESCRIPTION: "Vote for minigame for a specific region",
+      },
+      FISH: {
+        NAME: "fish",
+        COMMAND: "!region fish",
+        DESCRIPTION: "Fish for a ticket",
+      },
+      ROCK: {
+        NAME: "rock",
+        COMMAND: "!region rock",
+        DESCRIPTION: "Throw a rock",
+      },
+      PLAYERS: {
+        NAME: "players",
+        COMMAND: "!region players",
+        DESCRIPTION: "Get the players currently in the region",
+      },
+    },
+  },
+  MAP: {
+    NAME: "map",
+    COMMAND: "!map",
+    DESCRIPTION: "Show the map hud",
+    SUBCOMMANDS: {
+      DEFAULT: {
+        NAME: "default",
+        COMMAND: "!default",
+        DESCRIPTION: "Loads the default map hud",
+      },
+      NEXT: {
+        NAME: "next",
+        COMMAND: "!next",
+        DESCRIPTION: "Loads the the next page on the map hud",
+      },
+      PREV: {
+        NAME: "prev",
+        COMMAND: "!prev",
+        DESCRIPTION: "Loads the the previous page on the map hud",
+      },
     }
-  });
-
-  s += "```"
-  message.reply(s);
+  }
 }
