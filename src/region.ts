@@ -1,5 +1,5 @@
 import { EmbedBuilder, Snowflake, StageChannel, VoiceChannel } from "discord.js";
-import { RegionActivity } from "./activities.ts/activity";
+import { RegionActivity } from "./activities/activity";
 import { MAP } from "./lib/conts";
 import { Player } from "./player";
 

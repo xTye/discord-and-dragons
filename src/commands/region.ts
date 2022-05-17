@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
-import { JOIN } from '../activities.ts/sike-dilemma';
+import { JOIN } from '../activities/sike-dilemma';
 import { COMMANDS } from '../lib/commands';
 import { game } from '../game';
 import { GameStateType } from '../lib/types';

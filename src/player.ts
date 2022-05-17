@@ -1,7 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, CommandInteraction, EmbedBuilder, GuildMember, Interaction, InteractionCollector, Message, MessageActionRowComponentBuilder, ModalActionRowComponentBuilder, PermissionFlagsBits, Snowflake, StageChannel, TextChannel, VoiceChannel } from "discord.js";
-import { Fish } from "./activities.ts/fish";
-import { PrisonersDilemma } from "./activities.ts/prisoners-dilemma";
-import { JOIN, SikeDilemma } from "./activities.ts/sike-dilemma";
+import { Fish } from "./activities/fish";
+import { PrisonersDilemma } from "./activities/prisoners-dilemma";
+import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
 import { COMMANDS } from "./lib/commands";
 import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, inQueue, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
 import { game, Game } from "./game";
