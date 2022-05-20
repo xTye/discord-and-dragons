@@ -1,9 +1,9 @@
-import { CategoryChannel, Message, StageChannel, TextChannel } from "discord.js";
-import { ERR_CODES } from "../game";
-import { Player } from "../player";
+import { CategoryChannel, Message, Snowflake, StageChannel, TextChannel } from "discord.js";
+import { ERR_CODES, game } from "../game";
 import { PowerUpsType, TimerType, VoteRoundType, VoteType } from "./types";
 import "dotenv/config";
-import { Region, Route } from "../region";
+import { Region } from "../locations/region";
+import { Route } from "../locations/route";
 export const time = {
   fifteenMin    : 900000,
   tenMin        : 600000,
@@ -56,12 +56,12 @@ export const MAP = "https://i.imgur.com/5wpzveP.jpg";
 export const REGION_NUM = 6;
 
 //HEAD Region Post https://imgur.com/a/rJVekd0
-export const CAVERN = "https://i.imgur.com/AVLqOGl.png";
-export const COAST = "https://i.imgur.com/9b12WCt.jpg";
-export const LAIR = "https://i.imgur.com/lCeXqiq.png";
-export const MEADOW = "https://i.imgur.com/paANsMg.png";
-export const OCEAN = "https://i.imgur.com/sAWftdn.jpg";
-export const VOLCANO = "https://i.imgur.com/6aERa1U.png";
+export const CAVERN_PIC = "https://i.imgur.com/AVLqOGl.png";
+export const COAST_PIC = "https://i.imgur.com/9b12WCt.jpg";
+export const LAIR_PIC = "https://i.imgur.com/lCeXqiq.png";
+export const MEADOW_PIC = "https://i.imgur.com/paANsMg.png";
+export const OCEAN_PIC = "https://i.imgur.com/sAWftdn.jpg";
+export const VOLCANO_PIC = "https://i.imgur.com/6aERa1U.png";
 
 export const LAIR_DESC = "In the ruins of an ancient citadel, a dragon stares down at you. You, standing small amongst the stones and smell of sulfur.";
 export const MEADOW_DESC = "A sweat air blows through the grasses and clumps of tree. It is a warm summer afternoon, and you look down a winding trail to sheer cliffs, the dragon’s lair at your back.";
@@ -71,11 +71,17 @@ export const OCEAN_DESC = "An infinite abyss beckons beneath you, a chill pierce
 export const CAVERN_DESC = "You scale down to the caves which wind beneath the citadel. You have chosen to test your luck in the winding tunnels, watching for the telltale gleam of your torch on gold and jewels.";
 
 //HEAD Route Post https://imgur.com/a/pK2koPU
-export const ACORN_WAY = "https://i.imgur.com/HtLQ53o.png";
-export const CORAL_WALK = "https://i.imgur.com/h7qdUeL.jpg";
-export const CRYSTAL_PASS = "https://i.imgur.com/sG5l6rl.jpg";
-export const OCEANSIDE_ROUTE = "https://i.imgur.com/T3VmNyD.png";
-export const REDBRICK_WIND = "https://i.imgur.com/pjE2iP8.png";
+export const ACORN_WAY_PIC = "https://i.imgur.com/HtLQ53o.png";
+export const CORAL_WALK_PIC = "https://i.imgur.com/h7qdUeL.jpg";
+export const CRYSTAL_PASS_PIC = "https://i.imgur.com/sG5l6rl.jpg";
+export const OCEANSIDE_ROUTE_PIC = "https://i.imgur.com/T3VmNyD.png";
+export const REDBRICK_WIND_PIC = "https://i.imgur.com/pjE2iP8.png";
+
+export const ACORN_WAY_DESC = "The dry dirt underneath your feet crunches as you walk.";
+export const CORAL_WALK_DESC = "You hear the sound of waves wash on the shore as you make your way through the ruffling trees.";
+export const CRYSTAL_PASS_DESC = "Rocks crumble as you sift up and through the mountainy terrain.";
+export const OCEANSIDE_ROUTE_DESC = "The sound of the boat answers to the waves that challeng it.";
+export const REDBRICK_WIND_DESC = "The hills grow wide while looking towards the volcano.";
 
 
 
@@ -91,116 +97,205 @@ export const playersCategory = {
 export const general = {
   id: "967515407441346683",
   channel: TextChannel.prototype,
-  set setChannel(channel: TextChannel) {
-    this.channel = channel;
-  },
-  message: Message.prototype,
-  set setMessage(message: Message) {
-    this.message = message;
-  }
 };
+
 
 
 
 export const graph = {
-  dragonsLair : {
+  lair : {
     id: "970911618085027850",
-    name: "🐉Lair",
     region: Region.prototype,
     set setChannel(channel: StageChannel) {
-      this.region = new Region(channel, LAIR, LAIR_DESC)
+      this.region = new Region(
+        channel,
+        LAIR_PIC,
+        LAIR_DESC,
+      );
+
+      game.regions.set(
+        this.region.channel.id,
+        this.region,
+      );
     }
   },
-  tier1Red : {
+  meadow : {
     id: "971606879568543804",
-    name: "🥦Meadow",
     region: Region.prototype,
     set setChannel(channel: StageChannel) {
-      this.region = new Region(channel, MEADOW, MEADOW_DESC)
+      this.region = new Region(
+        channel,
+        MEADOW_PIC,
+        MEADOW_DESC,
+      );
+
+      game.regions.set(
+        this.region.channel.id,
+        this.region,
+      );
     }
   },
-  tier3Red : {
+  volcano : {
     id: "970912709086425098",
-    name: "🌋Volcano",
     region: Region.prototype,
     set setChannel(channel: StageChannel) {
-      this.region = new Region(channel, VOLCANO, VOLCANO_DESC)
+      this.region = new Region(
+        channel,
+        VOLCANO_PIC,
+        VOLCANO_DESC,
+      );
+
+      game.regions.set(
+        this.region.channel.id,
+        this.region,
+      );
     }
   },
-  tier1Blue : {
+  coast : {
     id: "971606769115725864",
-    name: "🌴Coast",
     region: Region.prototype,
     set setChannel(channel: StageChannel) {
-      this.region = new Region(channel, COAST, COAST_DESC)
+      this.region = new Region(
+        channel,
+        COAST_PIC,
+        COAST_DESC,
+      );
+
+      game.regions.set(
+        this.region.channel.id,
+        this.region,
+      );
     }
   },
-  tier3Blue : {
+  ocean : {
     id: "971606690053103646",
-    name: "🌊Ocean",
     region: Region.prototype,
     set setChannel(channel: StageChannel) {
-      this.region = new Region(channel, OCEAN, OCEAN_DESC)
+      this.region = new Region(
+        channel,
+        OCEAN_PIC,
+        OCEAN_DESC,
+      );
+
+      game.regions.set(
+        this.region.channel.id,
+        this.region,
+      );
     }
   },
-  tier2Yellow : {
+  cavern : {
     id: "971608131685724242",
-    name: "🪨Cavern",
     region: Region.prototype,
     set setChannel(channel: StageChannel) {
-      this.region = new Region(channel, CAVERN, CAVERN_DESC)
+      this.region = new Region(
+        channel,
+        CAVERN_PIC,
+        CAVERN_DESC,
+      );
+
+      game.regions.set(
+        this.region.channel.id,
+        this.region,
+      );
     }
   },
 
-  lairToRed : {
+  acorn : {
     id: "971608976208846949",
-    name: "🌍Acorn Way",
-    route: Route.prototype,
     set setChannel(channel: StageChannel) {
-      this.route = new Route(channel, LOST_CHANCE, TRAVEL_TIME, ACORN_WAY)
+      game.routes.set(
+        this.id,
+        new Route(
+          channel,
+          LOST_CHANCE,
+          TRAVEL_TIME,
+          ACORN_WAY_PIC,
+          ACORN_WAY_DESC,
+          new Map<Snowflake, Region>([
+            [graph.lair.region.channel.id, graph.lair.region],
+            [graph.meadow.region.channel.id, graph.meadow.region]
+          ]),
+        )
+      );
     }
   },
-  lairToBlue : {
+  oceanside : {
     id: "971609334276554852",
-    name: "🌍Oceanside Route",
-    route: Route.prototype,
     set setChannel(channel: StageChannel) {
-      this.route = new Route(channel, LOST_CHANCE, TRAVEL_TIME, OCEANSIDE_ROUTE)
+      game.routes.set(
+        this.id,
+        new Route(
+          channel,
+          LOST_CHANCE,
+          TRAVEL_TIME,
+          OCEANSIDE_ROUTE_PIC,
+          OCEANSIDE_ROUTE_DESC,
+          new Map<Snowflake, Region>([
+            [graph.lair.region.channel.id, graph.lair.region],
+            [graph.coast.region.channel.id, graph.coast.region]
+          ]),
+        )
+      );
     }
   },
-  lairToYellow : {
+  crystal : {
     id: "971609833214210118",
-    name: "🌍Crystal Pass",
-    route: Route.prototype,
     set setChannel(channel: StageChannel) {
-      this.route = new Route(channel, LOST_CHANCE, time.tenSec, CRYSTAL_PASS)
+      game.routes.set(
+        this.id,
+        new Route(
+          channel,
+          LOST_CHANCE,
+          TRAVEL_TIME,
+          CRYSTAL_PASS_PIC,
+          OCEANSIDE_ROUTE_DESC,
+          new Map<Snowflake, Region>([
+            [graph.lair.region.channel.id, graph.lair.region],
+            [graph.cavern.region.channel.id, graph.cavern.region]
+          ]),
+        )
+      );
     }
   },
-  redToRed : {
+  redbrick : {
     id: "971609607581601802",
-    name: "🌍Redbrick Wind",
-    route: Route.prototype,
     set setChannel(channel: StageChannel) {
-      this.route = new Route(channel, LOST_CHANCE, TRAVEL_TIME, REDBRICK_WIND)
+      game.routes.set(
+        this.id,
+        new Route(
+          channel,
+          LOST_CHANCE,
+          TRAVEL_TIME,
+          REDBRICK_WIND_PIC,
+          REDBRICK_WIND_DESC,
+          new Map<Snowflake, Region>([
+            [graph.meadow.region.channel.id, graph.meadow.region],
+            [graph.volcano.region.channel.id, graph.volcano.region]
+          ]),
+        )
+      );
     }
   },
-  blueToBlue : {
+  coral : {
     id: "971609385061199902",
-    name: "🌍Coral Walk",
-    embed: {
-      field: {
-        name: "Lair",
-        value: "In the ruins of an ancient citadel, a dragon stares down at you. You, standing small amongst the stones and smell of sulfur.",
-      },
-    },
-    route: Route.prototype,
     set setChannel(channel: StageChannel) {
-      this.route = new Route(channel, LOST_CHANCE, TRAVEL_TIME, CORAL_WALK)
+      game.routes.set(
+        this.id,
+        new Route(
+          channel,
+          LOST_CHANCE,
+          TRAVEL_TIME,
+          CORAL_WALK_PIC,
+          COAST_DESC,
+          new Map<Snowflake, Region>([
+            [graph.coast.region.channel.id, graph.coast.region],
+            [graph.ocean.region.channel.id, graph.ocean.region]
+          ]),
+        )
+      );
     }
   },
 };
-
-export const inQueue: boolean[] = [];
 
 export function convertTimer(milliseconds: number): TimerType {
   const minutes = Math.floor(milliseconds / 60000);

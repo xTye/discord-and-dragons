@@ -1,8 +1,8 @@
-import { CommandInteraction, StageChannel, EmbedBuilder } from "discord.js";
-import { RegionActivity } from "./activity";
-import { COLOSSEUM, convertTimer, DefaultTimer, INCREMENT_MILLIS, time } from "../lib/conts";
+import { CommandInteraction, EmbedBuilder } from "discord.js";
+import { RegionActivity } from ".";
+import { convertTimer, DefaultTimer, INCREMENT_MILLIS, time } from "../lib/conts";
+import { GameLocation } from "../locations";
 import { Player } from "../player";
-import { Region } from "../region";
 
 const ACTIVITY_CHANCE = 0.10;
 const MAX_TICKETS = 3;
@@ -15,7 +15,7 @@ export class Fish extends RegionActivity {
     doneTimer: time.thirtySec,
   }
 
-  constructor(region: Region) {
+  constructor(region: GameLocation) {
     super(region)
 
     this.tickets = this.generateRandomTickets(MAX_TICKETS);
@@ -91,7 +91,7 @@ export class Fish extends RegionActivity {
     player.activity.timer = convertTimer(this.activity.doneTimer);
     await interaction.reply("You have thrown a rock...");
 
-    [...this.region.regPlayers].forEach(async ([key, player]) => {
+    [...this.region.players].forEach(async ([key, player]) => {
       await player.channel.send("Skadoosh...");
     });
 

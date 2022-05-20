@@ -1,9 +1,11 @@
 import { GameStateType, TimerType, } from "./lib/types";
-import { general, convertTimer, DefaultTimer, SEARCH_TIME, INCREMENT_MILLIS, VOTE_TIME, MAX_ROUNDS, DefaultVoteRound, MAX_TIES, STARTING_ROUND, FROG, COLOSSEUM, TICKET_INC_DEATH, graph } from "./lib/conts";
+import { convertTimer, DefaultTimer, SEARCH_TIME, INCREMENT_MILLIS, VOTE_TIME, MAX_ROUNDS, DefaultVoteRound, MAX_TIES, STARTING_ROUND, FROG, COLOSSEUM, TICKET_INC_DEATH, graph, general } from "./lib/conts";
 import { CountVotes, InitVotes, ResetVotes, VoteResults, votes } from "./vote";
 import { Collection, EmbedBuilder, Snowflake } from "discord.js";
-import { Region, Route } from "./region";
 import { Player } from "./player";
+import { Region } from "./locations/region";
+import { Route } from "./locations/route";
+import { GameLocation } from "./locations";
 
 export class Game {
   state: GameStateType;
@@ -15,9 +17,12 @@ export class Game {
     immuneRound: boolean,
   };
   timer: TimerType;
-  regions: Region[];
-  routes: Route[];
+  locationStart?: GameLocation;
+  locationVote?: GameLocation;
+  regions: Collection<Snowflake, Region>;
+  routes: Collection<Snowflake, Route>;
   players: Collection<Snowflake, Player>;
+  playerJoinQueue: boolean[];
 
   constructor() {
     this.state = GameStateType.READY;
@@ -29,13 +34,25 @@ export class Game {
       immuneRound: true,
     },
     this.timer = DefaultTimer;
-    this.regions = [];
-    this.routes = [];
+    this.regions = new Collection<Snowflake, Region>();
+    this.routes = new Collection<Snowflake, Route>();
     this.players = new Collection<Snowflake, Player>();
+    this.playerJoinQueue = [];
   }
 
-  addRegion(region: Region) {
-    
+  addRegion(region: Region, locationStart?: GameLocation, locationVote?: GameLocation) {
+    this.regions.set(region.channel.id, region);
+
+    if (locationStart) this.locationStart = locationStart;
+    if (locationVote) this.locationVote = locationVote;
+  }
+
+  setLocationStart(locationsStart: GameLocation) {
+    this.locationStart = locationsStart;
+  }
+
+  setLocationVote(locationVote: GameLocation) {
+    this.locationVote = locationVote;
   }
 }
 
@@ -53,9 +70,8 @@ export async function Start() {
 }
 
 async function initSearch() {
-  Object.values(graph).forEach(value => {
-    if ("region" in value)
-      value.region.newRound();
+  [...game.regions].forEach(([id, region]) => {
+      region.newRound();
   });
 }
 

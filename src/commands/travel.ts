@@ -1,10 +1,19 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
-import { graph } from '../lib/conts';
 import { game } from '../game';
 import { GameStateType } from '../lib/types';
  
+function generateTravelChoices() {
+  let choices: { name: string, value: string }[] = [];
+
+  [...game.regions].forEach(([id, region]) => {
+    choices.push({ name: region.channel.name, value: id });
+  });
+
+  return choices;
+}
+
 export default {
   
   //HEAD MAKE A COMMAND BUILDER FOR THESE SUBCOMMANDS FOR DYNAMIC CREATED MAPS 
@@ -19,18 +28,12 @@ export default {
       .addStringOption(option => 
         option.setName("location")
           .setDescription("location")
-            .setChoices(
-              { name: graph.dragonsLair.name, value: graph.dragonsLair.id },
-              { name: graph.tier1Blue.name, value: graph.tier1Blue.id },
-              { name: graph.tier3Blue.name, value: graph.tier3Blue.id },
-              { name: graph.tier2Yellow.name, value: graph.tier2Yellow.id },
-              { name: graph.tier1Red.name, value: graph.tier1Red.id },
-              { name: graph.tier3Red.name, value: graph.tier3Red.id })
+            .setChoices(...generateTravelChoices())
             .setRequired(true)
     ))
     .addSubcommand(option => 
       option.setName(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.NAME)
-        .setDescription(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.DESCRIPTION))
+        .setDescription(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.DESCRIPTION))    
 
   , 
   /**
@@ -63,8 +66,10 @@ export default {
             return;
           }
           const regex = /(?<=(location:))[^\s]*/g;
-          const destination = interaction.toString().match(regex)?.toString();
-          if (!destination) { await interaction.reply({ content: "Internal game error! ERROR CODE 1" }); return;}
+          const destSnow = interaction.toString().match(regex)?.toString();
+          if (!destSnow) { await interaction.reply({ content: "Internal game error! ERROR CODE 1" }); return; }
+          const destination = game.regions.get(destSnow);
+          if (!destination) { await interaction.reply({ content: "Internal game error! ERROR CODE 2" }); return; }
           await player.beginTravel(destination, interaction);
             break;
         case COMMANDS.TRAVEL.SUBCOMMANDS.TIME.NAME:  

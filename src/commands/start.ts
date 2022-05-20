@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
-import { inQueue } from '../lib/conts';
 import { game, Start } from '../game';
 import { GameStateType } from '../lib/types';
  
@@ -26,7 +25,7 @@ export default {
       return;
     }
   
-    if (inQueue.length !== 0) {
+    if (game.playerJoinQueue.length !== 0) {
       await interaction.reply(`Player is still joining game.`);
       return;
     }

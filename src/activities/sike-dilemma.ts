@@ -1,6 +1,6 @@
 import { CommandInteraction, EmbedBuilder } from "discord.js";
-import { RegionActivity } from "./activity";
-import { COLOSSEUM, time } from "../lib/conts";
+import { RegionActivity } from ".";
+import { time } from "../lib/conts";
 import { game } from "../game";
 import { Player } from "../player";
 
@@ -15,25 +15,9 @@ export class SikeDilemma extends RegionActivity {
   player2: Player | undefined = undefined;
   arrivedMessageString: string = `You can join the activity here by using the /region join <HELPEE or HELPER> command to participate in the activity.`;
   gameMessageString: string = `You have twenty seconds to choose to help <@${this.player1?.user.id}>. Submit your vote by using the command /region vote.\n
-  If both players choose to vote, then <@${this.player1?.user.id}> gets a powerup to check the tickets of anyone in the game anytime during the game.\n
-  Otherwise, <@${this.player1?.user.id}> gets their tickets shown to everyone currently in the room.`;
+                              If both players choose to vote, then <@${this.player1?.user.id}> gets a powerup to check the tickets of anyone in the game anytime during the game.\n
+                              Otherwise, <@${this.player1?.user.id}> gets their tickets shown to everyone currently in the room.`;
 
-  async arrivedMessage(player: Player) {
-    const mes = new EmbedBuilder()
-      .setDescription(this.arrivedMessageString);
-    
-    await player.channel.send({ embeds: [mes] });
-  }
-
-  async gameMessage() {
-    const mes = new EmbedBuilder()
-      .setDescription(this.gameMessageString);
-
-    await this.player1?.channel.send({ content: `<@${this.player1.user.id}>` });
-    await this.player1?.channel.send({ embeds: [mes] });
-    await this.player2?.channel.send({ content: `<@${this.player2.user.id}>` });
-    await this.player2?.channel.send({ embeds: [mes] });
-  }
 
   override newRound() {
     this.activity.done = false;
@@ -77,6 +61,7 @@ export class SikeDilemma extends RegionActivity {
     this.player2.activity.active = true;
     await this.player1.user.voice.setMute(true);
     await this.player2.user.voice.setMute(true);
+    //! DEPRECATED FIX LATER
     this.gameMessage();
 
     setTimeout(async () => {
@@ -101,7 +86,7 @@ export class SikeDilemma extends RegionActivity {
 
       if (resolved) return;
 
-      [...this.region.regPlayers].forEach(async ([key, player]) => {
+      [...this.region.players].forEach(async ([key, player]) => {
         await player.channel.send(`<@${this.player1?.user.id}> has \`${this.player1?.vote.tickets}\` tickets remaining.`)
       });
 

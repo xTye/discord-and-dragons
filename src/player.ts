@@ -3,11 +3,13 @@ import { Fish } from "./activities/fish";
 import { PrisonersDilemma } from "./activities/prisoners-dilemma";
 import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
 import { COMMANDS } from "./lib/commands";
-import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, inQueue, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
+import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
 import { game, Game } from "./game";
-import { Region, Route } from "./region";
 import { HUDType, TimerType } from "./lib/types";
 import { votes } from "./vote";
+import { Region } from "./locations/region";
+import { GameLocation } from "./locations";
+import { Route } from "./locations/route";
 
 export class Player {
   game: Game;
@@ -15,8 +17,7 @@ export class Player {
   name: string;
   user: GuildMember;
   channel: TextChannel;
-  region: Region;
-  route: Route | undefined;
+  location: GameLocation;
   hud: {
     type: HUDType;
     mapNum: number;
@@ -36,8 +37,7 @@ export class Player {
     teamDilemma: boolean,
   };
   travel: {
-    location: VoiceChannel | StageChannel;
-    destination: VoiceChannel | StageChannel;
+    destination?: Region;
     traveling: boolean;
     timer: TimerType;
   };
@@ -52,14 +52,21 @@ export class Player {
     checktick: number;
   }
 
-  constructor(game: Game, user: GuildMember, channel: TextChannel, tickets: number, travelMult: number, searchMult: number) {
+  constructor(
+    game: Game,
+    user: GuildMember,
+    channel: TextChannel,
+    location: GameLocation,
+    tickets?: number = 1,
+    travelMult?: number = 0,
+    searchMult?: number = 0,
+    ) {
     this.game = game;
     this.playerId = this.game.players.size + 1;
     this.name = user.nickname ? user.nickname : user.displayName;
     this.user = user;
     this.channel = channel;
-    this.region = graph.dragonsLair.region;
-    this.route = undefined;
+    this.location = location,
     this.hud = {
       type: HUDType.MAP,
       mapNum: -1,
@@ -79,8 +86,6 @@ export class Player {
       teamDilemma: false,
     };
     this.travel = {
-      location: graph.dragonsLair.region.channel,
-      destination: graph.dragonsLair.region.channel,
       traveling: false,
       timer: DefaultTimer,
     };
@@ -95,7 +100,7 @@ export class Player {
       checktick: 0,
     };
 
-    this.region.regPlayers.set(this.user.id, this);
+    this.location.players.set(this.user.id, this);
   }
 
   async kill() {
@@ -104,7 +109,7 @@ export class Player {
   }
 
   async findRoom(interaction: CommandInteraction) {
-    await interaction.reply(`You are currently at ${this.travel.location.name}`);
+    await interaction.reply(`You are currently at ${this.location.channel.name}`);
   }
 
   async tickets(interaction: CommandInteraction) {
@@ -145,12 +150,8 @@ export class Player {
 
   async regionPlayersMessage(interaction: CommandInteraction) {
     const mes = new EmbedBuilder()
-      .setColor("#00ff44")
-      .setTitle(`${this.region.channel.name}`)
-      .setAuthor({ name: "Game Master", iconURL: COLOSSEUM })
-      .setThumbnail(this.region.picture)
       .setDescription(`Here is a list of people in your current region.`);
-    [...this.region.regPlayers].forEach(([id, player]) => {
+    [...this.location.players].forEach(([id, player]) => {
       mes.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
     });
 
@@ -179,12 +180,12 @@ export class Player {
 
   }
 
-  async move(channel: VoiceChannel | StageChannel) {
-    if (this.travel.location == channel) return true;
+  async move(dest: GameLocation) {
+    if (this.location == dest) return true;
 
     //DESC Check if can move, kill it can't
     try {
-      await this.user.voice.setChannel(channel.id);
+      await this.user.voice.setChannel(dest.channel.id);
       await this.user.voice.setSuppressed(false);
     } catch (err) {
       try {
@@ -201,27 +202,24 @@ export class Player {
     return true;
   }
 
-  async voteMove(channel: StageChannel) {
-    if (!(await this.move(channel))) return;
+  async voteMove(dest: GameLocation) {
+    if (!(await this.move(dest))) return;
 
-    this.region.regPlayers.delete(this.user.id);
-    this.route?.routPlayers.delete(this.user.id);
-    this.route = undefined;
+    this.location.players.delete(this.user.id);
 
     if (this.travel.timer.timeout) clearTimeout(this.travel.timer.timeout);
     if (this.travel.timer.interval) clearInterval(this.travel.timer.interval);
     if (this.activity.timer.timeout) clearTimeout(this.activity.timer.timeout);
     if (this.activity.timer.interval) clearInterval(this.activity.timer.interval);
-    this.travel.location = channel;
-    this.travel.destination = channel;
+    this.travel.destination = undefined;
     this.travel.timer = DefaultTimer;
     this.travel.traveling = false;
     this.activity.prisonDilemma = false;
     this.activity.timer = DefaultTimer;
     this.activity.active = false;
 
-    this.region = graph.dragonsLair.region;
-    this.region.regPlayers.set(this.user.id, this);
+    this.location = dest;
+    this.location.players.set(this.user.id, this);
   }
 
 //# =========================================
@@ -236,14 +234,10 @@ export class Player {
    */
   async travelMessage(interaction: CommandInteraction, route: Route) {
     const mes = new EmbedBuilder()
-      .setColor("#00ff44")
-      .setTitle(`${route.channel.name}`)
-      .setAuthor({ name: "Game Master", iconURL: COLOSSEUM })
-      .setThumbnail(route.picture)
       .setDescription(`You are on your way to ${this.travel.destination}`)
-      .addFields([{ name: "Time Left:", value: `${this.travel.timer.minutes}:${this.travel.timer.seconds < 10 ? "0" + this.travel.timer.seconds : this.travel.timer.seconds}` }])
+      .setFields([{ name: "Time Left:", value: `${this.travel.timer.minutes}:${this.travel.timer.seconds < 10 ? "0" + this.travel.timer.seconds : this.travel.timer.seconds}` }])
       .addFields([{ name: "Players in route", value: `\u200B` }]);
-    [...route.routPlayers].forEach(([id, player]) => {
+    [...route.players].forEach(([id, player]) => {
       mes.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
     });
 
@@ -256,92 +250,32 @@ export class Player {
    * @param destination id of channel
    * @param interaction used for reply
    */
-  async beginTravel(destination: Snowflake, interaction: CommandInteraction) {
-    let route;
-    let dest;
-
-    //DESC lair to rt1
-    if (destination === graph.tier1Red.id && this.travel.location.id === graph.dragonsLair.id) {
-      route = graph.lairToRed;
-      dest = graph.tier1Red;
-    }
-  
-    //DESC rt1 to rt3
-    else if (destination === graph.tier3Red.id && this.travel.location.id === graph.tier1Red.id) {
-      route = graph.redToRed;
-      dest = graph.tier3Red;
-    }
-
-    //DESC rt3 to rt1
-    else if (destination === graph.tier1Red.id && this.travel.location.id === graph.tier3Red.id) {
-      route = graph.redToRed;
-      dest = graph.tier1Red;
-    }
-
-    //DESC rt1 to lair
-    else if (destination === graph.dragonsLair.id && this.travel.location.id === graph.tier1Red.id) {
-      route = graph.lairToRed;
-      dest = graph.dragonsLair;
-    }
-
-    //DESC lair to bt1
-    else if (destination === graph.tier1Blue.id && this.travel.location.id === graph.dragonsLair.id) {
-      route = graph.lairToBlue;
-      dest = graph.tier1Blue;
-    }
-  
-    //DESC bt1 to bt3
-    else if (destination === graph.tier3Blue.id && this.travel.location.id === graph.tier1Blue.id) {
-      route = graph.blueToBlue;
-      dest = graph.tier3Blue;
-    }
+  async beginTravel(destination: Region, interaction: CommandInteraction) {
+    let route: Route | undefined = undefined;
     
-    //DESC bt3 to bt1
-    else if (destination === graph.tier1Blue.id && this.travel.location.id === graph.tier3Blue.id) {
-      route = graph.blueToBlue;
-      dest = graph.tier1Blue;
+    if (this.location instanceof Region) {
+      route = this.location.findPath(destination);
     }
 
-    //DESC bt1 to lair
-    else if (destination === graph.dragonsLair.id && this.travel.location.id === graph.tier1Blue.id) {
-      route = graph.lairToBlue;
-      dest = graph.dragonsLair;
-    }
-
-    //DESC lair to yt2
-    else if (destination === graph.tier2Yellow.id && this.travel.location.id === graph.dragonsLair.id) {
-      route = graph.lairToYellow;
-      dest = graph.tier2Yellow;
-    }
-
-    //DESC yt2 to lair
-    else if (destination === graph.dragonsLair.id && this.travel.location.id === graph.tier2Yellow.id) {
-      route = graph.lairToYellow;
-      dest = graph.dragonsLair;
-    }
-  
-    //DESC Throw error
-    else {
-      await interaction.reply(`Can not travel to *that location* from ${this.travel.location.name}.`);
+    if (!route) {
+      await interaction.reply(`Can not travel to ${destination.channel.name} from ${this.location.channel.name}.`);
       return;
     }
 
-    if (!await this.move(route.route.channel)) return;
+    if (!await this.move(this.location)) return;
 
-    this.region.regPlayers.delete(this.user.id);
-    this.travel.location = route.route.channel;
-    this.travel.timer.milliseconds = route.route.travelTime;
-    this.travel.destination = dest.region.channel;
+    this.location.players.delete(this.user.id);
+    this.location = route;
+    this.travel.timer.milliseconds = route.travelTime;
+    this.travel.destination = destination;
     this.travel.timer = convertTimer(this.travel.timer.milliseconds);
-    this.region = dest.region;
-    this.route = route.route;
-    this.route.routPlayers.set(this.user.id, this);
+    this.location.players.set(this.user.id, this);
   
     //DESC Simulate travel
     const TRAVEL_TIME = this.travel.timer.milliseconds;
     this.travel.traveling = true;
 
-    await this.travelMessage(interaction, route.route);
+    await this.travelMessage(interaction, route);
 
     const interval = setInterval(async () => {
       this.travel.timer = convertTimer(this.travel.timer.milliseconds - INCREMENT_MILLIS);
@@ -350,15 +284,14 @@ export class Player {
     const timeout = setTimeout(async () => {
       clearInterval(interval);
 
-      if (!(await this.move(this.travel.destination))) return;
+      if (!this.travel.destination || !(await this.move(this.travel.destination))) return;
 
-      //await this.region.arrivedMessage(this);
-      this.region.regPlayers.set(this.user.id, this);
-      this.route?.routPlayers.delete(this.user.id);
-      this.route = undefined;
-      this.travel.location = this.travel.destination;
+      sdfsdawait this.location.arrivedMessage(this);
+      this.location.players.delete(this.user.id);
+      this.location = this.travel.destination;
       this.travel.timer = DefaultTimer;
       this.travel.traveling = false;
+      this.location.players.set(this.user.id, this);
     }, TRAVEL_TIME);
   
     this.travel.timer.timeout = timeout;
@@ -405,7 +338,7 @@ export class Player {
   async activityPlay(interaction: CommandInteraction, code: JOIN) {
     if (this.activity.active) { await interaction.reply("Already apart of the game"); return; }
 
-    if (this.region.activity instanceof SikeDilemma) { await this.region.activity.joinGame(interaction, code, this); return; }
+    if (this.location instanceof Region && this.location.activity instanceof SikeDilemma) { await this.location.activity.joinGame(interaction, code, this); return; }
 
     await interaction.reply("Cannot join the game for whatever reason.");
   }
@@ -413,15 +346,15 @@ export class Player {
   async activityVote(interaction: CommandInteraction, vote: boolean) {
     if (!this.activity.active) { await interaction.reply("Cannot vote if not in a game"); return; }
 
-    if (this.region instanceof SikeDilemma) {
-      if (!this.region.activity.done) { await interaction.reply("Game hasn't started yet"); return; }
+    if (this.location instanceof SikeDilemma) {
+      if (!this.location.activity.done) { await interaction.reply("Game hasn't started yet"); return; }
       
       this.activity.teamDilemma = vote;
       await interaction.reply(`You have voted ${vote ? "Yes" : "No"}`);
       return;
     }
 
-    if (this.region instanceof PrisonersDilemma) {
+    if (this.location instanceof PrisonersDilemma) {
       this.activity.prisonDilemma = vote;
       await interaction.reply(`You have voted ${vote ? "Yes" : "No"}`);
       return;
@@ -433,8 +366,8 @@ export class Player {
   async activityFish(interaction: CommandInteraction) {
     if (this.activity.active) { await interaction.reply("You are already doing something"); return; }
 
-    if (this.region instanceof Fish) {
-      await this.region.fish(interaction, this);
+    if (this.location instanceof Fish) {
+      await this.location.fish(interaction, this);
       return;
     }
 
@@ -444,8 +377,8 @@ export class Player {
   async activityRock(interaction: CommandInteraction) {
     if (this.activity.active) { await interaction.reply("You are already doing something"); return; }
 
-    if (this.region instanceof Fish) {
-      await this.region.throwRock(interaction, this);
+    if (this.location instanceof Fish) {
+      await this.location.throwRock(interaction, this);
       return;
     }
 
@@ -481,21 +414,23 @@ export class Player {
  * HEAD Player joins a game.
  * # ==========================================
  * Function for joining a game. Create a new player object, and adds the instance to 
- * the current players Map.
+ * the current players in the game.
  * 
  * @param interaction command
  * @param user user in guild
  */
 export async function JoinGame(interaction: CommandInteraction, user: GuildMember) {
   
-  inQueue.push(true);
+  if (!game.locationStart) { await interaction.reply({ content: "Set the game starting room.", ephemeral: true }); return; }
+
+  game.playerJoinQueue.push(true);
 
   try{
-    await user.voice.setChannel(graph.dragonsLair.id);
+    await user.voice.setChannel(game.locationStart.channel.id);
     await user.voice.setSuppressed(false);
   } catch (err) {
     await interaction.reply({ content: "Must be in a voice channel to play the game.", ephemeral: true });
-    inQueue.pop();
+    game.playerJoinQueue.pop();
     console.log(err);
     console.log("User not in a voice channel");
     return;
@@ -524,17 +459,17 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
       ],
   });
   } catch (err) {
-    inQueue.pop();
+    game.playerJoinQueue.pop();
     console.log(err);
     console.log("Could not setup player chanel correctly");
     return;
   }
-[]
-  const player: Player = new Player(game, user, channel, 1, 0, 0);
+
+  const player: Player = new Player(game, user, channel, game.locationStart);
 
   game.players.set(player.user.id, player);
   await user.roles.add(PLAYER_ROLE_ID);
-  inQueue.pop();
+  game.playerJoinQueue.pop();
   await player.joinedMessage();
   await interaction.reply({ content: "A new channel has been created for you, please use this channel for all things command related.", ephemeral: true });
 

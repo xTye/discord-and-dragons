@@ -1,9 +1,8 @@
 import { EmbedBuilder, StageChannel } from "discord.js";
-import { RegionActivity } from "./activity";
-import { COLOSSEUM, DefaultTimer, time } from "../lib/conts";
+import { RegionActivity } from ".";
+import { DefaultTimer, time } from "../lib/conts";
 import { game } from "../game";
 import { Player } from "../player";
-import { Region } from "../region";
 
 const ACTIVITY_CHANCE = 1.0;
 
@@ -22,23 +21,6 @@ export class PrisonersDilemma extends RegionActivity {
   If either player chooses to vote and the other doesn't, then the player who selects yes gets a mute powerup (mute a player for a minute anytime during the game)\n
   If both players don't vote, then a random person in the room gets the mute powerup`;
 
-  async arrivedMessage(player: Player) {
-    const mes = new EmbedBuilder()
-      .setDescription(this.arrivedMessageString);
-    
-    await player.channel.send({ embeds: [mes] });
-  }
-
-  async gameMessage() {
-    const mes = new EmbedBuilder()
-      .setDescription(this.gameMessageString);
-
-    await this.player1?.channel.send({ content: `<@${this.player1.user.id}>` });
-    await this.player1?.channel.send({ embeds: [mes] });
-    await this.player2?.channel.send({ content: `<@${this.player2.user.id}>` });
-    await this.player2?.channel.send({ embeds: [mes] });
-  }
-
   /**
    * @description Timer for random occurences on the prisoners delimma game
    */
@@ -51,19 +33,21 @@ export class PrisonersDilemma extends RegionActivity {
     this.activity.timer.interval = setInterval(async () => {
       if (game.timer.milliseconds <= time.thirtySec) { this.clearTimer; return; }
       if (Math.random() > this.activity.popChance) { this.activity.popChance *= 2; return; }
-      
-      const regPlayers = [...this.region.regPlayers.values()];
-      if (regPlayers.length < 2) return;
+
+      const locPlayers = [...this.region.players.values()];
+      if (locPlayers.length < 2) return;
 
       this.clearTimer();
 
       this.activity.done = true;
-      this.player1 = regPlayers.splice(Math.floor(Math.random() * regPlayers.length), 1)[0];
-      this.player2 = regPlayers.splice(Math.floor(Math.random() * regPlayers.length), 1)[0];
+      this.player1 = locPlayers.splice(Math.floor(Math.random() * locPlayers.length), 1)[0];
+      this.player2 = locPlayers.splice(Math.floor(Math.random() * locPlayers.length), 1)[0];
       this.player1.activity.active = true;
       this.player2.activity.active = true;
       await this.player1.user.voice.setMute(true);
       await this.player2.user.voice.setMute(true);
+
+      //! DEPRECATED UPDATE HUD
       await this.gameMessage();
   
       this.startMiniGameTimer();
@@ -109,8 +93,9 @@ export class PrisonersDilemma extends RegionActivity {
 
       if (resolved) return;
 
-      const player = [...this.region.regPlayers.values()].at(Math.floor(Math.random() * this.region.regPlayers.size));
-      if (!player) { console.log("Internal server error, maybe someone joined?"); return; }
+      const locPlayers = [...this.region.players.values()];
+      const player = locPlayers[Math.floor(Math.random() * locPlayers.length)];
+      if (!player) { console.log("Internal server error, maybe someone left?"); return; }
       player.powerups.mute += 1;
       if (player.user.id != this.player1.user.id) await this.player1.channel.send(`You did not recieve a mute powerup`);
       if (player.user.id != this.player2.user.id) await this.player2.channel.send(`You did not recieve a mute powerup`);
