@@ -3,6 +3,7 @@ A fun game designed to play with friends in a discord server. Make an .env file 
 
 # TODO
 ## Application
+- Interaction loading messages
 - Communicate with database and website
 - Migrate bot commands to backend server
 - Add custom map creation

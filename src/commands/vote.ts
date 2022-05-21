@@ -27,9 +27,6 @@ export default {
               .setMaxValue(10)
               .setMinValue(1)
               .setRequired(true)))
-    .addSubcommand(subcom => 
-      subcom.setName(COMMANDS.VOTE.SUBCOMMANDS.TICKETS.NAME)
-        .setDescription(COMMANDS.VOTE.SUBCOMMANDS.TICKETS.DESCRIPTION))
   , 
   /**
    * Executes on travel command, checks if a player can travel
@@ -44,11 +41,6 @@ export default {
     else {
 
       const subcommand = interaction.toString().split(" ");
-
-      if (subcommand[1] === COMMANDS.VOTE.SUBCOMMANDS.TICKETS.NAME) {
-        await player.tickets(interaction);
-        return;
-      }
 
       if (game.state !== GameStateType.VOTE) {
         await interaction.reply("Game not in vote phase.");

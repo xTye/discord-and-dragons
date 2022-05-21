@@ -48,7 +48,7 @@ export class PrisonersDilemma extends RegionActivity {
       await this.player2.user.voice.setMute(true);
 
       //! DEPRECATED UPDATE HUD
-      await this.gameMessage();
+      //await this.gameMessage();
   
       this.startMiniGameTimer();
   

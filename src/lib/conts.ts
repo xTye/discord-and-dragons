@@ -72,18 +72,27 @@ export const CAVERN_DESC = "You scale down to the caves which wind beneath the c
 
 //HEAD Route Post https://imgur.com/a/pK2koPU
 export const ACORN_WAY_PIC = "https://i.imgur.com/HtLQ53o.png";
-export const CORAL_WALK_PIC = "https://i.imgur.com/h7qdUeL.jpg";
-export const CRYSTAL_PASS_PIC = "https://i.imgur.com/sG5l6rl.jpg";
-export const OCEANSIDE_ROUTE_PIC = "https://i.imgur.com/T3VmNyD.png";
-export const REDBRICK_WIND_PIC = "https://i.imgur.com/pjE2iP8.png";
-
 export const ACORN_WAY_DESC = "The dry dirt underneath your feet crunches as you walk.";
+export const ACORN_WAY_GIF = "https://64.media.tumblr.com/6f975693e2cca0aff043b40cec175302/147a3f82059bc008-06/s540x810/c8ab1b2ccb8a1482ec1ae71ed66d93f52b9276ea.gifv";
+
+export const CORAL_WALK_PIC = "https://i.imgur.com/h7qdUeL.jpg";
 export const CORAL_WALK_DESC = "You hear the sound of waves wash on the shore as you make your way through the ruffling trees.";
+export const CORAL_WALK_GIF = "https://cdnb.artstation.com/p/assets/images/images/037/263/051/original/karina-formanova-rainforest-animation.gif";
+
+export const CRYSTAL_PASS_PIC = "https://i.imgur.com/sG5l6rl.jpg";
 export const CRYSTAL_PASS_DESC = "Rocks crumble as you sift up and through the mountainy terrain.";
+export const CRYSTAL_PASS_GIF = "https://64.media.tumblr.com/tumblr_m5e4ioVQsj1qbzzgco1_1280.gifv";
+
+export const OCEANSIDE_ROUTE_PIC = "https://i.imgur.com/T3VmNyD.png";
+export const OCEANSIDE_ROUTE_GIF = "https://media0.giphy.com/media/l4FGxh9oeMtEeSFJ6/giphy.gif";
 export const OCEANSIDE_ROUTE_DESC = "The sound of the boat answers to the waves that challeng it.";
+
+export const REDBRICK_WIND_PIC = "https://i.imgur.com/pjE2iP8.png";
 export const REDBRICK_WIND_DESC = "The hills grow wide while looking towards the volcano.";
+export const REDBRICK_WIND_GIF = "https://64.media.tumblr.com/255799370c3933b0f11a7a8e3fb0c238/tumblr_o2w5ji11ES1uqr9h0o1_1280.gifv";
 
 
+export const FISHING_GIF = "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/0ab4b036812305.572a1cada9fdc.gif";
 
 
 export const playersCategory = {
@@ -113,8 +122,9 @@ export const graph = {
         LAIR_DESC,
       );
 
-      game.regions.set(
-        this.region.channel.id,
+      game.addRegion(
+        this.region,
+        this.region,
         this.region,
       );
     }
@@ -129,10 +139,7 @@ export const graph = {
         MEADOW_DESC,
       );
 
-      game.regions.set(
-        this.region.channel.id,
-        this.region,
-      );
+      game.addRegion(this.region);
     }
   },
   volcano : {
@@ -145,10 +152,7 @@ export const graph = {
         VOLCANO_DESC,
       );
 
-      game.regions.set(
-        this.region.channel.id,
-        this.region,
-      );
+      game.addRegion(this.region);
     }
   },
   coast : {
@@ -161,10 +165,7 @@ export const graph = {
         COAST_DESC,
       );
 
-      game.regions.set(
-        this.region.channel.id,
-        this.region,
-      );
+      game.addRegion(this.region);
     }
   },
   ocean : {
@@ -177,10 +178,7 @@ export const graph = {
         OCEAN_DESC,
       );
 
-      game.regions.set(
-        this.region.channel.id,
-        this.region,
-      );
+      game.addRegion(this.region);
     }
   },
   cavern : {
@@ -193,10 +191,7 @@ export const graph = {
         CAVERN_DESC,
       );
 
-      game.regions.set(
-        this.region.channel.id,
-        this.region,
-      );
+      game.addRegion(this.region);
     }
   },
 

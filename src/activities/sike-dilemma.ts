@@ -62,7 +62,7 @@ export class SikeDilemma extends RegionActivity {
     await this.player1.user.voice.setMute(true);
     await this.player2.user.voice.setMute(true);
     //! DEPRECATED FIX LATER
-    this.gameMessage();
+    //this.gameMessage();
 
     setTimeout(async () => {
       if (!this.player1 || !this.player2) return;

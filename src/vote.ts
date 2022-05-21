@@ -3,6 +3,7 @@ import { COLOSSEUM, DefaultVotes, DefaultVotesPerPlayer, FROG, general, graph, M
 import { ERR_CODES, game } from "./game";
 import { Player } from "./player";
 import { GameStateType, VotesType, VoteType } from "./lib/types";
+import { Region } from "./locations/region";
 
 // The ID is the votee and the array are voters IDS 
 export const votes = new Map<string, VoteType>();
@@ -48,7 +49,7 @@ export function InitVotes() {
   ResetVotes();
   //! This kills a player if they can't be moved.
   [...game.players].forEach(async ([id, player]) => {
-    await player.voteMove(graph.dragonsLair.region.channel);
+    await player.voteMove(graph.lair.region);
   });
   [...game.players].forEach(async ([id, player]) => {
     if (!player.vote.immunity)

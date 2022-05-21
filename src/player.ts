@@ -3,13 +3,14 @@ import { Fish } from "./activities/fish";
 import { PrisonersDilemma } from "./activities/prisoners-dilemma";
 import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
 import { COMMANDS } from "./lib/commands";
-import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
+import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, LAIR_PIC, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
 import { game, Game } from "./game";
-import { HUDType, TimerType } from "./lib/types";
+import { TimerType } from "./lib/types";
 import { votes } from "./vote";
 import { Region } from "./locations/region";
 import { GameLocation } from "./locations";
 import { Route } from "./locations/route";
+import { playerHUD } from "./hud/player-hud";
 
 export class Player {
   game: Game;
@@ -18,13 +19,7 @@ export class Player {
   user: GuildMember;
   channel: TextChannel;
   location: GameLocation;
-  hud: {
-    type: HUDType;
-    mapNum: number;
-    message: Message,
-    embed: EmbedBuilder,
-    actionrows: ActionRowBuilder<MessageActionRowComponentBuilder>[],
-  }
+  hud: playerHUD;
   stats: {
     travelMult: number,
     searchMult: number,
@@ -57,9 +52,9 @@ export class Player {
     user: GuildMember,
     channel: TextChannel,
     location: GameLocation,
-    tickets?: number = 1,
-    travelMult?: number = 0,
-    searchMult?: number = 0,
+    tickets?: number,
+    travelMult?: number,
+    searchMult?: number,
     ) {
     this.game = game;
     this.playerId = this.game.players.size + 1;
@@ -67,16 +62,10 @@ export class Player {
     this.user = user;
     this.channel = channel;
     this.location = location,
-    this.hud = {
-      type: HUDType.MAP,
-      mapNum: -1,
-      message: Message.prototype,
-      embed: new EmbedBuilder(),
-      actionrows: [],
-    }
+    this.hud = new playerHUD();
     this.stats = {
-      travelMult,
-      searchMult,
+      travelMult: travelMult ? travelMult : 0,
+      searchMult: searchMult ? searchMult : 0,
     };
     this.activity = {
       active: false,
@@ -92,7 +81,7 @@ export class Player {
     this.vote = {
       immunity: false,
       muted: false,
-      tickets,
+      tickets: tickets ? tickets : 1,
       spentTickets: 0,
     };
     this.powerups = {
@@ -108,76 +97,8 @@ export class Player {
     await this.user.roles.remove(PLAYER_ROLE_ID);
   }
 
-  async findRoom(interaction: CommandInteraction) {
-    await interaction.reply(`You are currently at ${this.location.channel.name}`);
-  }
-
-  async tickets(interaction: CommandInteraction) {
-    await interaction.reply(`You have \`${this.vote.tickets - this.vote.spentTickets}\` tickets remaining.`);
-  }
-
-  initPlayerHUD() {
-    this.hud.embed = new EmbedBuilder()
-      .setTitle(`\`\`\`Time: ${this.travel.timer.minutes}:${this.travel.timer.seconds < 10 ? "0" + this.travel.timer.seconds : this.travel.timer.seconds}\`\`\``)
-      .setAuthor({ name: `Tickets: ${this.vote.tickets}`, iconURL: this.user.displayAvatarURL()})
-      .setThumbnail(MAP)
-      .setTimestamp(new Date());
-
-    const mapButton = new ButtonBuilder()
-      .setCustomId("map")
-      .setStyle(ButtonStyle.Primary)
-      .setLabel("Map")
-      .setEmoji("975969511020822528")
-
-    const noteButton = new ButtonBuilder()
-      .setCustomId("note")
-      .setStyle(ButtonStyle.Primary)
-      .setLabel("Leave Note")
-
-    this.hud.actionrows.push(new ActionRowBuilder({ components: [mapButton, noteButton]}));
-  }
-
-  async joinedMessage() {
-    this.initPlayerHUD();
-    this.hud.embed.setDescription(`Welcome to the game! Here is a list of people who are also in the lobby.`);
-    [...game.players].forEach(([id, player]) => {
-      this.hud.embed.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
-    });
-
-    await this.channel.send({ content: `<@${this.user.id}>` });
-    this.hud.message = await this.channel.send({ embeds: [this.hud.embed], components: [...this.hud.actionrows] });
-  }
-
-  async regionPlayersMessage(interaction: CommandInteraction) {
-    const mes = new EmbedBuilder()
-      .setDescription(`Here is a list of people in your current region.`);
-    [...this.location.players].forEach(([id, player]) => {
-      mes.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
-    });
-
-    await interaction.reply({ embeds: [mes] });
-  }
-
-  async mapHUD(interaction: CommandInteraction, page: string) {
-
-    if (page === COMMANDS.MAP.SUBCOMMANDS.DEFAULT.NAME) this.hud.mapNum = Math.floor(Math.random() * REGION_NUM);
-    else if (page === COMMANDS.MAP.SUBCOMMANDS.NEXT.NAME) this.hud.mapNum = (this.hud.mapNum + 1) % REGION_NUM;
-    else this.hud.mapNum = (this.hud.mapNum - 1) % REGION_NUM;
-
-    interaction.editReply("Loaded map");
-
-    const region = this.game.regions[this.hud.mapNum]
-    this.game.players.at
-
-
-    this.hud.embed
-      .setTitle("Map")
-      //.setFields([{ name:  }])
-  }
-
-  gameStartedMessage() {
-
-
+  async initPlayerHUD() {
+    this.hud.init(this);
   }
 
   async move(dest: GameLocation) {
@@ -286,7 +207,7 @@ export class Player {
 
       if (!this.travel.destination || !(await this.move(this.travel.destination))) return;
 
-      sdfsdawait this.location.arrivedMessage(this);
+      //!sdfsdawait this.location.arrivedMessage(this);
       this.location.players.delete(this.user.id);
       this.location = this.travel.destination;
       this.travel.timer = DefaultTimer;
@@ -470,32 +391,7 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
   game.players.set(player.user.id, player);
   await user.roles.add(PLAYER_ROLE_ID);
   game.playerJoinQueue.pop();
-  await player.joinedMessage();
+  await player.initPlayerHUD();
   await interaction.reply({ content: "A new channel has been created for you, please use this channel for all things command related.", ephemeral: true });
-
   console.log(`${player.name} has joined the game.`);
-}
-
-export async function GetPlayers(interaction: CommandInteraction) {
-  const mes = new EmbedBuilder()
-    .setColor("#00ff44")
-    .setTitle(`${interaction.member?.user.username}`)
-    .setAuthor({ name: "Frog", iconURL: FROG })
-    .setThumbnail(COLOSSEUM)
-    .setDescription("Here are a list of the active lobby / game. This will probably stay like this until the game is actually finished.");
-  [...game.players].forEach(([id, player]) => {
-    mes.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
-  });
-
-
-
-  await interaction.reply({ embeds: [mes] });
-}
-
-export function GetPlayer(id: string) {
-  return game.players.get(id);
-}
-
-export function isPlayer(player: any): player is Player {
-  return player !== undefined;
 }
