@@ -53,8 +53,6 @@ export default {
 
     else {
       const subcommand = interaction.toString().split(" ");
-			if (subcommand[1] === COMMANDS.REGION.SUBCOMMANDS.ROOM.NAME) { await player.findRoom(interaction); return;}
-
 			if (player.travel.traveling) { await interaction.reply("There are no activities you can do while in route (to be added...)"); return; }
 
       switch (subcommand[1]){
@@ -78,9 +76,6 @@ export default {
 						break;
 				case COMMANDS.REGION.SUBCOMMANDS.ROCK.NAME:
 					await player.activityRock(interaction);
-						break;
-				case COMMANDS.REGION.SUBCOMMANDS.PLAYERS.NAME:
-					await player.regionPlayersMessage(interaction);
 						break;
       }
     }

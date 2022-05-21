@@ -3,7 +3,13 @@ A fun game designed to play with friends in a discord server. Make an .env file 
 
 # TODO
 ## Application
-- Interaction loading messages
+Short Term:
+- Interaction loading messages for players
+- Power up classes
+- Modular hud updates
+- Test role mentions with commands wjen priviladged
+
+Long Term:
 - Communicate with database and website
 - Migrate bot commands to backend server
 - Add custom map creation

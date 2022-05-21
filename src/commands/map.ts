@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
 import { game } from '../game';
-import { GetPlayers } from '../player';
 
 //HEAD Add PM for nonplayer later
 export default {
@@ -22,9 +21,10 @@ export default {
 	, async execute(interaction: CommandInteraction) {
 
 		const player = game.players.get(interaction.user.id);
-    if (!player) await interaction.reply({ content: "You are not a player in the game", ephemeral: true });
+    if (!player) {await interaction.reply({ content: "You are not a player in the game", ephemeral: true }); return;};
 
+    //if 
 
-    await GetPlayers(interaction);
+    //player.hud.mapHUD();
   },
 };

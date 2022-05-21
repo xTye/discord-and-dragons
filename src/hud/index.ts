@@ -46,12 +46,12 @@ export class HUD {
     else this.map.page = (this.map.page - 1) % REGION_NUM;
   }
 
-  async mapHUD(interaction: CommandInteraction, page: string) {
+  async mapHUD(interaction: CommandInteraction, page: string, player?: Player) {
 
     this.getMapPage(page);
 
     this.map.region = game.regions.at(this.map.page);
-    if (!this.map.region) { await interaction.reply({ content: "Load failure", ephemeral: true }); return false; }
+    if (!this.map.region) { await interaction.reply({ content: "Load failure", ephemeral: true }); return; }
 
     this.embed
       .setTitle(this.map.region.channel.name)
