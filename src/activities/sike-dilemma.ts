@@ -1,7 +1,7 @@
 import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { RegionActivity } from ".";
+import { game } from "..";
 import { time } from "../lib/conts";
-import { game } from "../game";
 import { Player } from "../player";
 
 export enum JOIN { HELPEE, HELPER };

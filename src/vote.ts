@@ -1,9 +1,10 @@
 import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { COLOSSEUM, DefaultVotes, DefaultVotesPerPlayer, FROG, general, graph, MAX_TIES, TICKET_INC_DEATH, TICKET_INC_IMMUNE } from "./lib/conts";
-import { ERR_CODES, game } from "./game";
+import { ERR_CODES } from "./game";
 import { Player } from "./player";
 import { GameStateType, VotesType, VoteType } from "./lib/types";
 import { Region } from "./locations/region";
+import { game } from ".";
 
 // The ID is the votee and the array are voters IDS 
 export const votes = new Map<string, VoteType>();

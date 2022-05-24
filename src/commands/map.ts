@@ -1,30 +1,37 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction } from 'discord.js';
+import { ButtonInteraction, CommandInteraction } from 'discord.js';
+import { game } from '..';
 import { COMMANDS } from '../lib/commands';
-import { game } from '../game';
 
 //HEAD Add PM for nonplayer later
 export default {
 	data: new SlashCommandBuilder()
 		.setName(COMMANDS.MAP.NAME)
 		.setDescription(COMMANDS.MAP.DESCRIPTION)
-    .addSubcommand(sub => 
-      sub.setName(COMMANDS.MAP.SUBCOMMANDS.DEFAULT.NAME)
-        .setDescription(COMMANDS.MAP.SUBCOMMANDS.DEFAULT.DESCRIPTION))
-    .addSubcommand(sub => 
-      sub.setName(COMMANDS.MAP.SUBCOMMANDS.NEXT.NAME)
-        .setDescription(COMMANDS.MAP.SUBCOMMANDS.NEXT.DESCRIPTION))
-    .addSubcommand(sub => 
-      sub.setName(COMMANDS.MAP.SUBCOMMANDS.PREV.NAME)
-        .setDescription(COMMANDS.MAP.SUBCOMMANDS.PREV.DESCRIPTION))
+    .addStringOption(option =>
+      option.setName("page")
+        .setDescription("Choose a page in the map hud")
+        .addChoices(
+          { name: "default", value: COMMANDS.MAP.SUBCOMMANDS.DEFAULT.NAME },
+          { name: "next", value: COMMANDS.MAP.SUBCOMMANDS.NEXT.NAME },
+          { name: "previous", value: COMMANDS.MAP.SUBCOMMANDS.PREV.NAME },
+        )
+        .setRequired(true))
 
-	, async execute(interaction: CommandInteraction) {
 
+	, async execute(interaction: CommandInteraction, command: string[]) {
+
+    // Add non-player hud in the future
 		const player = game.players.get(interaction.user.id);
-    if (!player) {await interaction.reply({ content: "You are not a player in the game", ephemeral: true }); return;};
+    if (!player) {await interaction.reply({ content: "You are not a player in the game", ephemeral: true }); return; }
 
-    //if 
+    else {
+      const regex = /(?<=(page:))[^\s]*/g;
 
-    //player.hud.mapHUD();
+      let temp = command[1].match(regex)?.toString();
+      if (!temp) { await interaction.reply({ content: "Internal server error, please try again", ephemeral: true }); return; }
+
+      player.hud.mapHUD(interaction, temp);
+    }
   },
 };

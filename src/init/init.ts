@@ -29,7 +29,7 @@ export function init() {
     const ch = client.channels.cache.get(value.id);
     if (!ch) return;
     if (ch.type === ChannelType.GuildStageVoice)
-      value.setChannel = ch;
+      value.setChannel(ch);
   }
 
   return playersCategory;

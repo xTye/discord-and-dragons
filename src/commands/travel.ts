@@ -1,10 +1,10 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
+import { game } from '..';
 import { COMMANDS } from '../lib/commands';
-import { game } from '../game';
 import { GameStateType } from '../lib/types';
  
-function generateTravelChoices() {
+export function generateTravelChoices() {
   let choices: { name: string, value: string }[] = [];
 
   [...game.regions].forEach(([id, region]) => {
@@ -21,16 +21,6 @@ export default {
 	data: new SlashCommandBuilder()
 		.setName(COMMANDS.TRAVEL.NAME)
 		.setDescription(COMMANDS.TRAVEL.DESCRIPTION)
-
-    .addSubcommand(subcom => 
-      subcom.setName("to")
-      .setDescription("Travel to a location")
-      .addStringOption(option => 
-        option.setName("location")
-          .setDescription("location")
-            .setChoices(...generateTravelChoices())
-            .setRequired(true)
-    ))
     .addSubcommand(option => 
       option.setName(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.NAME)
         .setDescription(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.DESCRIPTION))    

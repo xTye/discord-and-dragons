@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
+import { game } from '..';
 import { COMMANDS } from '../lib/commands';
-import { game } from '../game';
 import { GameStateType } from '../lib/types';
 import { ListVotes } from '../vote';
  

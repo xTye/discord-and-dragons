@@ -4,13 +4,14 @@ import { PrisonersDilemma } from "./activities/prisoners-dilemma";
 import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
 import { COMMANDS } from "./lib/commands";
 import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, LAIR_PIC, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
-import { game, Game } from "./game";
+import { Game } from "./game";
 import { TimerType } from "./lib/types";
 import { votes } from "./vote";
 import { Region } from "./locations/region";
 import { GameLocation } from "./locations";
 import { Route } from "./locations/route";
 import { playerHUD } from "./hud/player-hud";
+import { game } from ".";
 
 export class Player {
   game: Game;
@@ -381,7 +382,6 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
   });
   } catch (err) {
     game.playerJoinQueue.pop();
-    console.log(err);
     console.log("Could not setup player chanel correctly");
     return;
   }
@@ -390,8 +390,8 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
 
   game.players.set(player.user.id, player);
   await user.roles.add(PLAYER_ROLE_ID);
-  game.playerJoinQueue.pop();
   await player.initPlayerHUD();
+  game.playerJoinQueue.pop();
   await interaction.reply({ content: "A new channel has been created for you, please use this channel for all things command related.", ephemeral: true });
   console.log(`${player.name} has joined the game.`);
 }

@@ -1,9 +1,10 @@
 import { CategoryChannel, Message, Snowflake, StageChannel, TextChannel } from "discord.js";
-import { ERR_CODES, game } from "../game";
+import { ERR_CODES } from "../game";
 import { PowerUpsType, TimerType, VoteRoundType, VoteType } from "./types";
 import "dotenv/config";
 import { Region } from "../locations/region";
 import { Route } from "../locations/route";
+import { game } from "..";
 export const time = {
   fifteenMin    : 900000,
   tenMin        : 600000,
@@ -59,6 +60,7 @@ export const REGION_NUM = 6;
 export const CAVERN_PIC = "https://i.imgur.com/AVLqOGl.png";
 export const COAST_PIC = "https://i.imgur.com/9b12WCt.jpg";
 export const LAIR_PIC = "https://i.imgur.com/lCeXqiq.png";
+export const LAIR_PIC_EMBED = "https://i.imgur.com/6MV09lH.png";
 export const MEADOW_PIC = "https://i.imgur.com/paANsMg.png";
 export const OCEAN_PIC = "https://i.imgur.com/sAWftdn.jpg";
 export const VOLCANO_PIC = "https://i.imgur.com/6aERa1U.png";
@@ -115,7 +117,7 @@ export const graph = {
   lair : {
     id: "970911618085027850",
     region: Region.prototype,
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       this.region = new Region(
         channel,
         LAIR_PIC,
@@ -132,7 +134,7 @@ export const graph = {
   meadow : {
     id: "971606879568543804",
     region: Region.prototype,
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       this.region = new Region(
         channel,
         MEADOW_PIC,
@@ -145,7 +147,7 @@ export const graph = {
   volcano : {
     id: "970912709086425098",
     region: Region.prototype,
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       this.region = new Region(
         channel,
         VOLCANO_PIC,
@@ -158,7 +160,7 @@ export const graph = {
   coast : {
     id: "971606769115725864",
     region: Region.prototype,
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       this.region = new Region(
         channel,
         COAST_PIC,
@@ -171,7 +173,7 @@ export const graph = {
   ocean : {
     id: "971606690053103646",
     region: Region.prototype,
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       this.region = new Region(
         channel,
         OCEAN_PIC,
@@ -184,7 +186,7 @@ export const graph = {
   cavern : {
     id: "971608131685724242",
     region: Region.prototype,
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       this.region = new Region(
         channel,
         CAVERN_PIC,
@@ -197,7 +199,7 @@ export const graph = {
 
   acorn : {
     id: "971608976208846949",
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       game.routes.set(
         this.id,
         new Route(
@@ -216,7 +218,7 @@ export const graph = {
   },
   oceanside : {
     id: "971609334276554852",
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       game.routes.set(
         this.id,
         new Route(
@@ -235,7 +237,7 @@ export const graph = {
   },
   crystal : {
     id: "971609833214210118",
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       game.routes.set(
         this.id,
         new Route(
@@ -254,7 +256,7 @@ export const graph = {
   },
   redbrick : {
     id: "971609607581601802",
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       game.routes.set(
         this.id,
         new Route(
@@ -273,7 +275,7 @@ export const graph = {
   },
   coral : {
     id: "971609385061199902",
-    set setChannel(channel: StageChannel) {
+    setChannel(channel: StageChannel) {
       game.routes.set(
         this.id,
         new Route(

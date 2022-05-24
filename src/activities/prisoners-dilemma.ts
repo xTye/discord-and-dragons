@@ -1,7 +1,7 @@
 import { EmbedBuilder, StageChannel } from "discord.js";
 import { RegionActivity } from ".";
+import { game } from "..";
 import { DefaultTimer, time } from "../lib/conts";
-import { game } from "../game";
 import { Player } from "../player";
 
 const ACTIVITY_CHANCE = 1.0;

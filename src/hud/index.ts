@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, CommandInteraction, EmbedBuilder, Message, MessageActionRowComponentBuilder } from "discord.js";
-import { game } from "../game";
+import { game } from "..";
 import { COMMANDS } from "../lib/commands";
 import { REGION_NUM } from "../lib/conts";
 import { Region } from "../locations/region";
@@ -25,7 +25,7 @@ export class HUD {
     this.interaction = CommandInteraction.prototype;
   }
 
-  async render(player: Player) {
+  async render(interaction?: CommandInteraction) {
     this.message = await this.message.edit({ embeds: [this.embed], components: [...this.actionrows] });
   }
 

@@ -2,9 +2,9 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
 import { MAX_PLAYERS } from '../lib/conts';
-import { game } from '../game';
 import { JoinGame } from '../player';
 import { GameStateType } from '../lib/types';
+import { game } from '..';
  
 export default {
 	data: new SlashCommandBuilder()

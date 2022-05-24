@@ -6,6 +6,7 @@ import { Player } from "./player";
 import { Region } from "./locations/region";
 import { Route } from "./locations/route";
 import { GameLocation } from "./locations";
+import { game } from ".";
 
 export class Game {
   state: GameStateType;
@@ -55,8 +56,6 @@ export class Game {
     this.locationVote = locationVote;
   }
 }
-
-export const game = new Game();
 
 export const enum ERR_CODES {DEFAULT = 0, MAX_TIES = -1, SUCCESS = -2, CALLBACK = -3, TIE = -4};
 
