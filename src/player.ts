@@ -63,7 +63,7 @@ export class Player {
     this.user = user;
     this.channel = channel;
     this.location = location,
-    this.hud = new playerHUD();
+    this.hud = new playerHUD(user.id);
     this.stats = {
       travelMult: travelMult ? travelMult : 0,
       searchMult: searchMult ? searchMult : 0,

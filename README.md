@@ -4,12 +4,11 @@ A fun game designed to play with friends in a discord server. Make an .env file 
 # TODO
 ## Application
 Immediate:
-- Safegaurd button clicks by adding id reference to HUD and add in addActionRow
-- Come up with a way to save hud states..
-  Maybe MapHUD is its own class and a player holds an array of huds with wrapper class that manages all huds?
-- Slowly add the command string array to replace the current .toString() reads..
+- Fix UI compiler errors
+- HUD contains UI elements. (There may not be a need for Player hud?)
 
 Short Term:
+- Add the command string array to replace the current .toString() reads
 - Interaction loading messages for players
 - Power up classes
 - Modular hud updates
