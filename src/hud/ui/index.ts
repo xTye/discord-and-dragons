@@ -22,11 +22,12 @@ export class UI {
     this.actionrows.push(new ActionRowBuilder({ components: buttons }));
   }
 
-  createButton(command: string, label: string, style?: ButtonStyle, emoji?: { name: string, id: Snowflake } | string) {
+  createButton(command: string, label: string, style?: ButtonStyle, emoji?: { name: string, id: Snowflake } | string, disabled?: boolean) {
     const button = new ButtonBuilder()
       .setCustomId(command + ' ' + this.id)
       .setStyle(style ? style : ButtonStyle.Primary)
-      .setLabel(label);
+      .setLabel(label)
+      .setDisabled(disabled ? disabled : false);
 
     if (emoji)
       button.setEmoji(typeof emoji === "string" ? emoji : `<:${emoji.name}:${emoji.id}>`);
@@ -34,5 +35,7 @@ export class UI {
     return button;
   }
 
-  async load(command?: string) {}
+  init() {}
+
+  load(command?: string) {}
 }

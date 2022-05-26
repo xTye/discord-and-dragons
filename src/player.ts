@@ -1,17 +1,16 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, CommandInteraction, EmbedBuilder, GuildMember, Interaction, InteractionCollector, Message, MessageActionRowComponentBuilder, ModalActionRowComponentBuilder, PermissionFlagsBits, Snowflake, StageChannel, TextChannel, VoiceChannel } from "discord.js";
+import { ChannelType, CommandInteraction, EmbedBuilder, GuildMember, Message, PermissionFlagsBits, TextChannel } from "discord.js";
 import { Fish } from "./activities/fish";
 import { PrisonersDilemma } from "./activities/prisoners-dilemma";
 import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
-import { COMMANDS } from "./lib/commands";
-import { COLOSSEUM, convertTimer, DefaultTimer, FROG, graph, INCREMENT_MILLIS, LAIR_PIC, MAP, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME, REGION_NUM, time } from "./lib/conts";
+import { convertTimer, DefaultTimer, INCREMENT_MILLIS, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME } from "./lib/conts";
 import { Game } from "./game";
 import { TimerType } from "./lib/types";
 import { votes } from "./vote";
 import { Region } from "./locations/region";
 import { GameLocation } from "./locations";
 import { Route } from "./locations/route";
-import { playerHUD } from "./hud/player-hud";
 import { game } from ".";
+import { HUD } from "./hud";
 
 export class Player {
   game: Game;
@@ -20,7 +19,7 @@ export class Player {
   user: GuildMember;
   channel: TextChannel;
   location: GameLocation;
-  hud: playerHUD;
+  hud: HUD;
   stats: {
     travelMult: number,
     searchMult: number,
@@ -63,7 +62,7 @@ export class Player {
     this.user = user;
     this.channel = channel;
     this.location = location,
-    this.hud = new playerHUD(user.id);
+    this.hud = new HUD(user.id, this);
     this.stats = {
       travelMult: travelMult ? travelMult : 0,
       searchMult: searchMult ? searchMult : 0,
@@ -99,7 +98,7 @@ export class Player {
   }
 
   async initPlayerHUD() {
-    this.hud.init(this);
+    this.hud.init();
   }
 
   async move(dest: GameLocation) {

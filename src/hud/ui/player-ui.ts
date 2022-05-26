@@ -1,49 +1,65 @@
 
 import { ButtonBuilder } from "@discordjs/builders";
-import { ButtonStyle, CommandInteraction, Snowflake } from "discord.js";
+import { ButtonStyle, EmbedBuilder } from "discord.js";
 import { UI } from ".";
 import { game } from "../..";
-import { COMMANDS } from "../../lib/commands";
-import { REGION_NUM } from "../../lib/conts";
-import { Region } from "../../locations/region";
+import { LAIR_PIC, LAIR_PIC_EMBED, MAP } from "../../lib/conts";
+import { Player } from "../../player";
 
 export class playerUI extends UI {
+  player: Player;
+
+  constructor(id: string, player: Player) {
+    super(id);
+    this.player = player;
+  }
+
+  override init() {
+    this.embed = new EmbedBuilder()
+      .setTitle(`Hey, ${this.player.name}`)
+      .setColor("#c94b68")
+      .setDescription(`Welcome to the game! Here is a list of people who are also in the lobby.`)
+      .addFields([
+        {
+        name: "\u200B",
+        value: "\u200B",
+        inline: false,
+        },
+      ])
+      .setAuthor({ name: `Tickets: ${this.player.vote.tickets}`, iconURL: this.player.user.displayAvatarURL()})
+      .setThumbnail(MAP)
+      .setImage(LAIR_PIC_EMBED)
+      .setFooter({ text: `Time: ${this.player.travel.timer.minutes}:${this.player.travel.timer.seconds < 10 ? "0" + this.player.travel.timer.seconds : this.player.travel.timer.seconds}`, iconURL: LAIR_PIC })
+      .setTimestamp(new Date());
+
+    [...game.players].forEach(([id, player]) => {
+      this.embed.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
+    });
+
+    this.embed.addFields([
+      {
+      name: "\u200B",
+      value: "\u200B",
+      inline: false,
+      }
+    ])
 
 
-  override async load(command: string) {
-    this.embed
-      .setTitle(this.map.region.channel.name)
-      .setDescription(this.map.region.description)
-      .setImage(this.map.region.picture)
 
-    const prevButton = this.createButton(
-      "/map page:prev",
-      "Prev",
-      
-      "◀️",
-    )
+    const mapButton = this.createButton(
+      "/map page:default",
+      "Map",
+      ButtonStyle.Primary,
+      { name: "string", id: "975968769174274078" }
+    );
 
-    const travelButton = new ButtonBuilder()
-      .setCustomId("/travel to location:" + this.map.region.channel.id)
-      .setStyle(ButtonStyle.Success)
-      .setLabel("Go")
-      .setEmoji("🚶‍♀️")
-      .setDisabled(game.state === GameStateType.READY ? true : false)
+    const readyButton = this.createButton(
+      "/ready",
+      "Ready",
+      ButtonStyle.Success,
+      "✅"
+    );
 
-    const nextButton = new ButtonBuilder()
-      .setCustomId("/map page:next")
-      .setStyle(ButtonStyle.Primary)
-      .setLabel("Next")
-      .setEmoji("▶️")
-
-    const cancelButton = new ButtonBuilder()
-      .setCustomId("/hud")
-      .setStyle(ButtonStyle.Danger)
-      .setLabel("Cancel")
-      .setEmoji("<:redcross:758380151238033419>")
-
-    this.addActionRow(prevButton, travelButton, nextButton, cancelButton);
-
-    return ;
+    this.addActionRow(mapButton, readyButton);
   }
 }

@@ -28,10 +28,10 @@ export default {
     else {
       const regex = /(?<=(page:))[^\s]*/g;
 
-      let temp = command[1].match(regex)?.toString();
-      if (!temp) { await interaction.reply({ content: "Internal server error, please try again", ephemeral: true }); return; }
+      let page = command[1].match(regex)?.toString();
+      if (!page) { await interaction.reply({ content: "Internal server error, please try again", ephemeral: true }); return; }
 
-      player.hud.mapHUD(interaction, temp);
+      player.hud.loadMap(interaction, page);
     }
   },
 };

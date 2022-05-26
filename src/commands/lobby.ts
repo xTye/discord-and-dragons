@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
-import { HUD } from '../hud';
 import { COMMANDS } from '../lib/commands';
  
 export default {
@@ -9,6 +8,6 @@ export default {
 		.setDescription(COMMANDS.LOBBY.DESCRIPTION)
 
 	, async execute(interaction: CommandInteraction) {
-    await HUD.GetPlayers(interaction);
+    
   },
 };

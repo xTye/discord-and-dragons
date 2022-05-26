@@ -8,6 +8,7 @@ Immediate:
 - HUD contains UI elements. (There may not be a need for Player hud?)
 
 Short Term:
+- Add player commands for syncing states and loading ui
 - Add the command string array to replace the current .toString() reads
 - Interaction loading messages for players
 - Power up classes
