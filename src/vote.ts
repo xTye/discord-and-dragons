@@ -1,9 +1,8 @@
 import { CommandInteraction, EmbedBuilder } from "discord.js";
-import { COLOSSEUM, DefaultVotes, DefaultVotesPerPlayer, FROG, general, graph, MAX_TIES, TICKET_INC_DEATH, TICKET_INC_IMMUNE } from "./lib/conts";
+import { COLOSSEUM, DefaultVotes, DefaultVotesPerPlayer, general, graph, MAX_TIES, TICKET_INC_DEATH, TICKET_INC_IMMUNE } from "./lib/conts";
 import { ERR_CODES } from "./game";
 import { Player } from "./player";
 import { GameStateType, VotesType, VoteType } from "./lib/types";
-import { Region } from "./locations/region";
 import { game } from ".";
 
 // The ID is the votee and the array are voters IDS 
@@ -69,7 +68,7 @@ export async function CountVotes() {
   
   //# No more iterations
   if (votes.size === 0) {
-    game.voteRound.err = ERR_CODES.TIE;
+    game.voteRoundData.err = ERR_CODES.TIE;
     return;
   }
 
@@ -94,7 +93,7 @@ export async function CountVotes() {
       .setColor("#f54284")
       .setAuthor({ name: "Game Master", iconURL: COLOSSEUM })
       .setThumbnail('https://c.tenor.com/omRyJItsM9MAAAAd/fire-dragon-dragon.gif')
-      .setDescription(`The dragon is displeased at a tie. '${game.voteRound.ties === MAX_TIES - 1 ? "You must vote again. REEEE" : ""}🔥'`)
+      .setDescription(`The dragon is displeased at a tie. '${game.voteRoundData.ties === MAX_TIES - 1 ? "You must vote again. REEEE" : ""}🔥'`)
       .addFields([{ name: `The tie is between:`, value: "\u200B" }]);
       [...tie].forEach(([votee, votes]) => {
         const player = game.players.get(votee);
@@ -106,13 +105,13 @@ export async function CountVotes() {
       await player.channel.send({ embeds: [mes] });
     });
 
-    game.voteRound.err = ERR_CODES.TIE;
+    game.voteRoundData.err = ERR_CODES.TIE;
     return;
   }
 
   const [id, player] = Array.from(tie)[0];
-  game.voteRound.player = id;
-  game.voteRound.err = ERR_CODES.SUCCESS;
+  game.voteRoundData.player = id;
+  game.voteRoundData.err = ERR_CODES.SUCCESS;
   return;
 }
 
@@ -120,7 +119,7 @@ export async function CountVotes() {
 //! Refactor later value->player + boolean
 export async function VoteResults() {
   //# Ties and immune voting
-  if (game.voteRound.err === ERR_CODES.MAX_TIES && game.voteRound.immuneRound) {
+  if (game.voteRoundData.err === ERR_CODES.MAX_TIES && game.voteRoundData.immuneRound) {
     await displayImmuneVoteResults(null);
     
     [...game.players].forEach(async ([key, value]) => {
@@ -134,7 +133,7 @@ export async function VoteResults() {
     return;
   }
   //# Ties and death voting
-  else if (game.voteRound.err === ERR_CODES.MAX_TIES && !game.voteRound.immuneRound) {
+  else if (game.voteRoundData.err === ERR_CODES.MAX_TIES && !game.voteRoundData.immuneRound) {
     const [id, player] = Array.from(game.players)[Math.floor(Math.random() * votes.size)];
     await displayDeathVoteResults(player);
     player.kill();
@@ -152,8 +151,8 @@ export async function VoteResults() {
     return;
   } 
   //# Immune voting
-  else if (game.voteRound.immuneRound) {
-    const player = game.players.get(game.voteRound.player);
+  else if (game.voteRoundData.immuneRound) {
+    const player = game.players.get(game.voteRoundData.player);
     if (!player) {
       general.channel.send(`Could not decipher winner, because I'm a dumb robot and I hate @Tye.`);
       return;
@@ -175,7 +174,7 @@ export async function VoteResults() {
   }
   //# Death round
   else {
-    const player = game.players.get(game.voteRound.player);
+    const player = game.players.get(game.voteRoundData.player);
     if (!player) {
       general.channel.send(`Could not decipher winner, because I'm a dumb robot and I hate @Tye.`);
       return;

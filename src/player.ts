@@ -1,4 +1,4 @@
-import { ChannelType, CommandInteraction, EmbedBuilder, GuildMember, Message, PermissionFlagsBits, TextChannel } from "discord.js";
+import { APISelectMenuOption, ChannelType, CommandInteraction, EmbedBuilder, GuildMember, Message, PermissionFlagsBits, TextChannel, UnsafeSelectMenuBuilder } from "discord.js";
 import { Fish } from "./activities/fish";
 import { PrisonersDilemma } from "./activities/prisoners-dilemma";
 import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
@@ -19,6 +19,7 @@ export class Player {
   user: GuildMember;
   channel: TextChannel;
   location: GameLocation;
+  ready: boolean;
   hud: HUD;
   stats: {
     travelMult: number,
@@ -63,6 +64,7 @@ export class Player {
     this.channel = channel;
     this.location = location,
     this.hud = new HUD(user.id, this);
+    this.ready = false;
     this.stats = {
       travelMult: travelMult ? travelMult : 0,
       searchMult: searchMult ? searchMult : 0,
@@ -92,13 +94,25 @@ export class Player {
     this.location.players.set(this.user.id, this);
   }
 
+  async readyUp(interaction: CommandInteraction) {
+    this.ready = !this.ready;
+    await this.hud.loadPlayerUI(interaction);
+  }
+
   async kill() {
     game.players.delete(this.user.id);
     await this.user.roles.remove(PLAYER_ROLE_ID);
   }
 
+  async sync(interaction: CommandInteraction, voice: boolean) {
+    await this.hud.loadPlayerUI(interaction);
+    
+    if (voice)
+      await this.move(this.location);
+  }
+
   async initPlayerHUD() {
-    this.hud.init();
+    await this.hud.init();
   }
 
   async move(dest: GameLocation) {
@@ -352,7 +366,6 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
   } catch (err) {
     await interaction.reply({ content: "Must be in a voice channel to play the game.", ephemeral: true });
     game.playerJoinQueue.pop();
-    console.log(err);
     console.log("User not in a voice channel");
     return;
   }
@@ -386,6 +399,11 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
   }
 
   const player: Player = new Player(game, user, channel, game.locationStart);
+
+  [...game.players].forEach(async ([id, otherPlayer]) => {
+    if (otherPlayer != player)
+      await otherPlayer.hud.playerReadyChangeEvent();
+  });
 
   game.players.set(player.user.id, player);
   await user.roles.add(PLAYER_ROLE_ID);

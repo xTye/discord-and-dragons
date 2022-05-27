@@ -1,6 +1,5 @@
-import { Snowflake, StageChannel } from "discord.js";
+import { APIMessageComponentEmoji, Snowflake, StageChannel } from "discord.js";
 import { GameLocation } from ".";
-import { Player } from "../player";
 import { Region } from "./region";
 
 export class Route extends GameLocation {
@@ -14,8 +13,9 @@ export class Route extends GameLocation {
     travelTime: number,
     picture: string,
     description: string,
+    emoji: APIMessageComponentEmoji,
     regions?: Map<Snowflake, Region>) {
-    super(channel, picture, description);
+    super(channel, picture, description, emoji);
     
     this.lostChance = lostChance;
     this.travelTime = travelTime;
@@ -24,6 +24,10 @@ export class Route extends GameLocation {
       this.regions = regions;
       [...regions].forEach(([id, region]) => {
         region.addRoute(this);
+
+        [...regions].forEach(([travId, travRegion]) => {
+          if (id != travId) region.addTravelRegion(travRegion);
+        });
       });
     }
     else {
@@ -32,6 +36,11 @@ export class Route extends GameLocation {
   }
 
   addRegion(region: Region) {
+    [...this.regions].forEach(([id, travRegion]) => {
+      region.addTravelRegion(travRegion);
+      travRegion.addTravelRegion(region);
+    });
+
     this.regions.set(region.channel.id, region);
     region.addRoute(this);
   }

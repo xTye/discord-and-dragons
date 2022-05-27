@@ -3,10 +3,14 @@ import { Player } from "../player";
 import { UI } from "./ui";
 import { mapUI } from "./ui/map-ui";
 import { playerUI } from "./ui/player-ui";
+import { time } from "../lib/conts";
+
+const TIMEOUT_BUFFER = time.threeSec;
 
 export class HUD {
   id: Snowflake;
   pui: playerUI;
+  timeout?: NodeJS.Timeout;
   ui: UI;
 
   message: Message;
@@ -19,15 +23,27 @@ export class HUD {
     this.message = Message.prototype;
   }
 
-  async render(interaction: CommandInteraction) {
-    await interaction.reply({ content: "Loading..." });
-    this.message = await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
-    await interaction.deleteReply();
+  async render(interaction?: CommandInteraction) {
+    if (interaction)
+      await interaction.reply({ content: "Loading..." });
+    
+      this.message = await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
+    
+    if (interaction)
+      await interaction.deleteReply();
   }
 
-  loadPlayerUI(interaction: CommandInteraction) {
-    this.ui = this.pui;
-    this.render(interaction)
+  async loadPlayerUI(interaction?: CommandInteraction, render?: boolean) {
+    this.pui.load();
+
+    if (render)
+      this.ui = this.pui;
+
+    if (this.ui === this.pui)
+      if (interaction)
+        await this.render(interaction);
+      else
+        await this.render();
   }
 
   async init() {
@@ -41,5 +57,20 @@ export class HUD {
 
     this.ui.load(command);
     this.render(interaction);
+  }
+
+  async playerReadyChangeEvent() {
+    if (this.timeout) return;
+
+    this.timeout = setTimeout(async () => {
+      
+      this.timeout = undefined;
+      this.loadPlayerUI();
+
+    }, TIMEOUT_BUFFER + Math.floor(Math.random() * time.halfSec));
+  }
+
+  async searchRound() {
+
   }
 }

@@ -1,21 +1,27 @@
-import { EmbedBuilder, Snowflake, StageChannel } from "discord.js";
+import { APIMessageComponentEmoji, EmbedBuilder, Snowflake, StageChannel } from "discord.js";
 import { GameLocation } from ".";
-import { POWERUP_MUTE_TIME } from "../lib/conts";
 import { Route } from "./route";
 
 export class Region extends GameLocation {
   routes: Map<Snowflake, Route>;
+  travRegions: Map<Snowflake, Region>;
 
   constructor(
     channel: StageChannel,
     picture: string,
-    description: string) {
-      super(channel, picture, description);
+    description: string,
+    emoji: APIMessageComponentEmoji) {
+      super(channel, picture, description, emoji);
       this.routes = new Map<Snowflake, Route>();
+      this.travRegions = new Map<Snowflake, Region>();
   }
 
   addRoute(route: Route) {
     this.routes.set(route.channel.id, route);
+  }
+
+  addTravelRegion(region: Region) {
+    this.travRegions.set(region.channel.id, region);
   }
 
   override findPath(dest: Region): Route | undefined {

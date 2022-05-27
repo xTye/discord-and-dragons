@@ -1,10 +1,12 @@
-import { CategoryChannel, Message, Snowflake, StageChannel, TextChannel } from "discord.js";
+import "dotenv/config";
+import { CategoryChannel, Snowflake, StageChannel, TextChannel } from "discord.js";
 import { ERR_CODES } from "../game";
 import { PowerUpsType, TimerType, VoteRoundType, VoteType } from "./types";
-import "dotenv/config";
 import { Region } from "../locations/region";
 import { Route } from "../locations/route";
 import { game } from "..";
+
+
 export const time = {
   fifteenMin    : 900000,
   tenMin        : 600000,
@@ -16,13 +18,17 @@ export const time = {
   twentySec     : 20000,
   fifteenSec    : 15000,
   tenSec        : 10000,
+  fiveSec       : 5000,
+  threeSec      : 3000,
+  oneSec        : 1000,
+  halfSec       : 500,
 };
 
 export const MAX_PLAYERS = 8;
 export const MAX_ROUNDS = 2;
 export const MAX_TIES = 2;
 export const STARTING_ROUND = true;
-export const INCREMENT_MILLIS = 5000;
+export const INCREMENT_MILLIS = time.fiveSec;
 
 
 export const SEARCH_TIME = time.fiveMin;
@@ -72,27 +78,39 @@ export const COAST_DESC = "You scan the waters in front of you, white foam and s
 export const OCEAN_DESC = "An infinite abyss beckons beneath you, a chill pierces your bones. This is a dangerous area, but imagine what great plunder can be found below the waves.";
 export const CAVERN_DESC = "You scale down to the caves which wind beneath the citadel. You have chosen to test your luck in the winding tunnels, watching for the telltale gleam of your torch on gold and jewels.";
 
+export const LAIR_EMOJI = { id: "973760937863565373", name: "will" };
+export const MEADOW_EMOJI = { id: "970562867776602142", name: "meadow" };
+export const VOLCANO_EMOJI = { id: "970562943794155580", name: "volcano" };
+export const COAST_EMOJI = { id: "970562805126299708", name: "coast" };
+export const OCEAN_EMOJI = { id: "970562909832876082", name: "ocean" };
+export const CAVERN_EMOJI = { id: "970562760096251934", name: "cavern" };
+
+
 //HEAD Route Post https://imgur.com/a/pK2koPU
 export const ACORN_WAY_PIC = "https://i.imgur.com/HtLQ53o.png";
 export const ACORN_WAY_DESC = "The dry dirt underneath your feet crunches as you walk.";
 export const ACORN_WAY_GIF = "https://64.media.tumblr.com/6f975693e2cca0aff043b40cec175302/147a3f82059bc008-06/s540x810/c8ab1b2ccb8a1482ec1ae71ed66d93f52b9276ea.gifv";
+export const ACORN_WAY_EMOJI = { id: "975968709329977354", name: "acorn_way" };
 
 export const CORAL_WALK_PIC = "https://i.imgur.com/h7qdUeL.jpg";
 export const CORAL_WALK_DESC = "You hear the sound of waves wash on the shore as you make your way through the ruffling trees.";
 export const CORAL_WALK_GIF = "https://cdnb.artstation.com/p/assets/images/images/037/263/051/original/karina-formanova-rainforest-animation.gif";
+export const CORAL_WALK_EMOJI = { id: "975968709627752479", name: "coral_walk" };
 
 export const CRYSTAL_PASS_PIC = "https://i.imgur.com/sG5l6rl.jpg";
 export const CRYSTAL_PASS_DESC = "Rocks crumble as you sift up and through the mountainy terrain.";
 export const CRYSTAL_PASS_GIF = "https://64.media.tumblr.com/tumblr_m5e4ioVQsj1qbzzgco1_1280.gifv";
+export const CRYSTAL_PASS_EMOJI = { id: "975968710466633728", name: "crystal_pass" };
 
 export const OCEANSIDE_ROUTE_PIC = "https://i.imgur.com/T3VmNyD.png";
 export const OCEANSIDE_ROUTE_GIF = "https://media0.giphy.com/media/l4FGxh9oeMtEeSFJ6/giphy.gif";
 export const OCEANSIDE_ROUTE_DESC = "The sound of the boat answers to the waves that challeng it.";
+export const OCEANSIDE_ROUTE_EMOJI = { id: "975968710600847430", name: "oceanside_route" };
 
 export const REDBRICK_WIND_PIC = "https://i.imgur.com/pjE2iP8.png";
 export const REDBRICK_WIND_DESC = "The hills grow wide while looking towards the volcano.";
 export const REDBRICK_WIND_GIF = "https://64.media.tumblr.com/255799370c3933b0f11a7a8e3fb0c238/tumblr_o2w5ji11ES1uqr9h0o1_1280.gifv";
-
+export const REDBRICK_WIND_EMOJI = { id: "975968710198186014", name: "redbrick_wind" };
 
 export const FISHING_GIF = "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/0ab4b036812305.572a1cada9fdc.gif";
 
@@ -122,6 +140,7 @@ export const graph = {
         channel,
         LAIR_PIC,
         LAIR_DESC,
+        LAIR_EMOJI,
       );
 
       game.addRegion(
@@ -139,6 +158,7 @@ export const graph = {
         channel,
         MEADOW_PIC,
         MEADOW_DESC,
+        MEADOW_EMOJI,
       );
 
       game.addRegion(this.region);
@@ -152,6 +172,7 @@ export const graph = {
         channel,
         VOLCANO_PIC,
         VOLCANO_DESC,
+        VOLCANO_EMOJI,
       );
 
       game.addRegion(this.region);
@@ -165,6 +186,7 @@ export const graph = {
         channel,
         COAST_PIC,
         COAST_DESC,
+        COAST_EMOJI,
       );
 
       game.addRegion(this.region);
@@ -178,6 +200,7 @@ export const graph = {
         channel,
         OCEAN_PIC,
         OCEAN_DESC,
+        OCEAN_EMOJI,
       );
 
       game.addRegion(this.region);
@@ -191,6 +214,7 @@ export const graph = {
         channel,
         CAVERN_PIC,
         CAVERN_DESC,
+        CAVERN_EMOJI,
       );
 
       game.addRegion(this.region);
@@ -208,6 +232,7 @@ export const graph = {
           TRAVEL_TIME,
           ACORN_WAY_PIC,
           ACORN_WAY_DESC,
+          ACORN_WAY_EMOJI,
           new Map<Snowflake, Region>([
             [graph.lair.region.channel.id, graph.lair.region],
             [graph.meadow.region.channel.id, graph.meadow.region]
@@ -227,6 +252,7 @@ export const graph = {
           TRAVEL_TIME,
           OCEANSIDE_ROUTE_PIC,
           OCEANSIDE_ROUTE_DESC,
+          OCEANSIDE_ROUTE_EMOJI,
           new Map<Snowflake, Region>([
             [graph.lair.region.channel.id, graph.lair.region],
             [graph.coast.region.channel.id, graph.coast.region]
@@ -245,7 +271,8 @@ export const graph = {
           LOST_CHANCE,
           TRAVEL_TIME,
           CRYSTAL_PASS_PIC,
-          OCEANSIDE_ROUTE_DESC,
+          CRYSTAL_PASS_DESC,
+          CRYSTAL_PASS_EMOJI,
           new Map<Snowflake, Region>([
             [graph.lair.region.channel.id, graph.lair.region],
             [graph.cavern.region.channel.id, graph.cavern.region]
@@ -265,6 +292,7 @@ export const graph = {
           TRAVEL_TIME,
           REDBRICK_WIND_PIC,
           REDBRICK_WIND_DESC,
+          REDBRICK_WIND_EMOJI,
           new Map<Snowflake, Region>([
             [graph.meadow.region.channel.id, graph.meadow.region],
             [graph.volcano.region.channel.id, graph.volcano.region]
@@ -283,7 +311,8 @@ export const graph = {
           LOST_CHANCE,
           TRAVEL_TIME,
           CORAL_WALK_PIC,
-          COAST_DESC,
+          CORAL_WALK_DESC,
+          CORAL_WALK_EMOJI,
           new Map<Snowflake, Region>([
             [graph.coast.region.channel.id, graph.coast.region],
             [graph.ocean.region.channel.id, graph.ocean.region]
