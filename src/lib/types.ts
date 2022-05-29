@@ -1,5 +1,7 @@
 import { CommandInteraction, Interaction, SlashCommandBuilder, StageChannel, VoiceChannel } from "discord.js";
 import { ERR_CODES } from "../game";
+import { Region } from "../locations/region";
+import { Route } from "../locations/route";
 
 export type PowerUpsType = { 
   checkTickets: number,
@@ -36,6 +38,11 @@ export type VoteRoundType = {
 export type InteractionType = {
   data: SlashCommandBuilder;
   execute(interaction: CommandInteraction): Promise<void>;
+}
+
+export type ConnectedRegion = {
+  route: Route;
+  region: Region;
 }
 
 export type PlayersByIdType = Map<number, string>;

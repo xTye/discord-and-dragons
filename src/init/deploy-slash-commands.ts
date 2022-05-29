@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { REST } from '@discordjs/rest';
 import fs from 'node:fs';
 import { generateTravelChoices } from '../commands/travel';
+import { COMMANDS } from '../lib/commands';
 import { TOKEN } from '../lib/conts';
 
 export const commands: Map<string, any> = new Map<string, any>();
@@ -13,16 +14,13 @@ export function deploySlashCommands() {
 		const ex = require(`../commands/${file}`);
 		const command: SlashCommandBuilder = ex.default.data;
 	
-		if (file === "travel.ts")
-			command.addSubcommand(subcom => 
-				subcom.setName("to")
-				.setDescription("Travel to a location")
-				.addStringOption(option => 
-					option.setName("location")
-						.setDescription("location")
-							.setChoices(...generateTravelChoices())
-							.setRequired(true)
-			));
+		if (file === "travel.ts") {
+			command.addStringOption(subcom => 
+				subcom.setName(COMMANDS.TRAVEL.SELECT.NAME)
+					.setDescription(COMMANDS.TRAVEL.SELECT.DESCRIPTION)
+					.setChoices(...generateTravelChoices())
+			);
+		}
 
 		commands.set(command.name, ex.default);
 		commandArr.push(command.toJSON());

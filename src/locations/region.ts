@@ -1,48 +1,33 @@
-import { APIMessageComponentEmoji, EmbedBuilder, Snowflake, StageChannel } from "discord.js";
+import { APIMessageComponentEmoji, APISelectMenuOption, ColorResolvable, Snowflake, StageChannel } from "discord.js";
 import { GameLocation } from ".";
+import { ConnectedRegion } from "../lib/types";
+import { Player } from "../player";
 import { Route } from "./route";
 
 export class Region extends GameLocation {
   routes: Map<Snowflake, Route>;
-  travRegions: Map<Snowflake, Region>;
+  regions: Map<Snowflake, ConnectedRegion>;
+  regionSelections: APISelectMenuOption[];
 
   constructor(
     channel: StageChannel,
     picture: string,
     description: string,
+    gif: string,
+    color: ColorResolvable,
     emoji: APIMessageComponentEmoji) {
-      super(channel, picture, description, emoji);
+      super(channel, picture, description, gif, color, emoji);
       this.routes = new Map<Snowflake, Route>();
-      this.travRegions = new Map<Snowflake, Region>();
+      this.regions = new Map<Snowflake, ConnectedRegion>();
+      this.regionSelections = [];
   }
 
   addRoute(route: Route) {
     this.routes.set(route.channel.id, route);
   }
 
-  addTravelRegion(region: Region) {
-    this.travRegions.set(region.channel.id, region);
-  }
-
-  override findPath(dest: Region): Route | undefined {
-    let path: Route[] = [];
-
-    [...this.routes].every(([id, route]) => {
-      if (route.regions.get(dest.channel.id)) {
-        path.push(route);
-        return false;
-      }
-
-      return true;
-    });
-
-    return path.pop();
-  }
-
-  async mapHUD(mes: EmbedBuilder) {
-    mes.setImage(this.picture)
-      .setDescription(this.description);
-    
-    return mes;
+  addConnectedRegion(route: Route, region: Region) {
+    this.regions.set(region.channel.id, { route, region });
+    this.regionSelections.push(region.selection.toJSON());
   }
 }

@@ -7,6 +7,7 @@ import { Region } from "./locations/region";
 import { Route } from "./locations/route";
 import { GameLocation } from "./locations";
 import { game } from ".";
+import { joinVoiceChannel, VoiceConnection } from "@discordjs/voice";
 
 export enum ERR_CODES {DEFAULT = 0, MAX_TIES = -1, SUCCESS = -2, CALLBACK = -3, TIE = -4};
 
@@ -19,13 +20,14 @@ export class Game {
     player: string,
     immuneRound: boolean,
   };
+  connection?: VoiceConnection;
   timer: TimerType;
   locationStart?: GameLocation;
   locationVote?: GameLocation;
   regions: Collection<Snowflake, Region>;
   routes: Collection<Snowflake, Route>;
   players: Collection<Snowflake, Player>;
-  playerJoinQueue: boolean[];
+  readyQueue: boolean[];
 
   constructor() {
     this.state = GameStateType.READY;
@@ -40,7 +42,7 @@ export class Game {
     this.regions = new Collection<Snowflake, Region>();
     this.routes = new Collection<Snowflake, Route>();
     this.players = new Collection<Snowflake, Player>();
-    this.playerJoinQueue = [];
+    this.readyQueue = [];
   }
 
   addRegion(region: Region, locationStart?: GameLocation, locationVote?: GameLocation) {
@@ -59,6 +61,10 @@ export class Game {
   }
 
   async start() {
+    [...this.players].forEach(([id, player]) => {
+      player.field.name = "___";
+    });
+
     try{
       STARTING_ROUND ? this.searchRound() : this.voteRound();
     } catch (err) {
@@ -67,25 +73,26 @@ export class Game {
   }
 
   async initSearch() {
-    [...game.regions].forEach(([id, region]) => {
+    console.log("Entering search round.");
+    this.timer = convertTimer(SEARCH_TIME);
+
+    [...this.regions].forEach(([id, region]) => {
         region.newRound();
     });
+
+    [...this.players].forEach(async ([key, player]) => {
+      await player.hud.searchRound();
+    });
+
+    this.state = GameStateType.SEARCH;
   }
 
   async searchRound() {
-    console.log("Entering search round.");
-    game.timer = convertTimer(SEARCH_TIME);
     await this.initSearch();
-  
-    [...game.players].forEach(async ([key, player]) => {
-      await player.hud.searchRound();
-    });
-  
-    game.state = GameStateType.SEARCH;
   
     //DESC Updates searching time left
     const interval = setInterval(async () => {
-      game.timer = convertTimer(game.timer.milliseconds - INCREMENT_MILLIS);
+      this.timer = convertTimer(this.timer.milliseconds - INCREMENT_MILLIS);
     }, INCREMENT_MILLIS);
   
     //DESC Fires when searching is done
@@ -98,41 +105,41 @@ export class Game {
   async voteRound() {
     console.log("Entering voting round");
     InitVotes();
-    game.timer = convertTimer(VOTE_TIME);
+    this.timer = convertTimer(VOTE_TIME);
   
     const mes: EmbedBuilder = new EmbedBuilder()
       .setColor("#f54284")
       .setTitle("Vote Round")
       .setAuthor({ name: "Game Master", iconURL: COLOSSEUM })
       .setThumbnail(COLOSSEUM)
-      .setDescription(`The walls rumble around you. 'You have ${game.timer.minutes} minutes and ${game.timer.seconds} remaining for vote time👩‍🚒'`)
+      .setDescription(`The walls rumble around you. 'You have ${this.timer.minutes} minutes and ${this.timer.seconds} remaining for vote time👩‍🚒'`)
       .addFields([{ name: "**Directions**", value: "Use the `/vote player <PLAYER ID> <TICKETS>` command to vote for a player with a certain number of tickets." }]);
       [...votes].forEach(([votee, voters]) => {
-        const player = game.players.get(votee);
+        const player = this.players.get(votee);
         if (!player) { return; }
         mes.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${votee}>`, inline: true }]);
       });
       
-    [...game.players].forEach(async ([key, player]) => {
+    [...this.players].forEach(async ([key, player]) => {
       await player.channel.send({ embeds: [mes] });
     });
   
-    game.state = GameStateType.VOTE;
+    this.state = GameStateType.VOTE;
   
     //DESC Updates voting time left
     const interval = setInterval(async () => {
-      game.timer = convertTimer(game.timer.milliseconds - INCREMENT_MILLIS);
+      this.timer = convertTimer(this.timer.milliseconds - INCREMENT_MILLIS);
     }, INCREMENT_MILLIS);
   
     //DESC Fires when voting is done
     setTimeout(async () => {
-      game.state = GameStateType.COUNT_VOTES;
+      this.state = GameStateType.COUNT_VOTES;
       clearInterval(interval);
   
-      game.voteRoundData.ties += 1;
+      this.voteRoundData.ties += 1;
       await CountVotes();
-      if (game.voteRoundData.ties < MAX_TIES) {
-        if (game.voteRoundData.err === ERR_CODES.SUCCESS) {
+      if (this.voteRoundData.ties < MAX_TIES) {
+        if (this.voteRoundData.err === ERR_CODES.SUCCESS) {
           await this.iterateNextHalfRound();
         }
         else {
@@ -144,7 +151,7 @@ export class Game {
       }
       //DESC Iterate next round
       else {
-        game.voteRoundData.err = ERR_CODES.MAX_TIES;
+        this.voteRoundData.err = ERR_CODES.MAX_TIES;
         await this.iterateNextHalfRound();
       }
     }, VOTE_TIME);
@@ -153,17 +160,17 @@ export class Game {
   async iterateNextHalfRound() {
     await VoteResults();
   
-    const immuneRound = game.voteRoundData.immuneRound;
-    if (!immuneRound) game.rounds++;
-    if (game.rounds >= MAX_ROUNDS) {
+    const immuneRound = this.voteRoundData.immuneRound;
+    if (!immuneRound) this.rounds++;
+    if (this.rounds >= MAX_ROUNDS) {
       this.constructFinalResults();
       return;
     }
   
-    game.voteRoundData.err = DefaultVoteRound.err;
-    game.voteRoundData.player = DefaultVoteRound.player;
-    game.voteRoundData.ties = 0;
-    game.voteRoundData.immuneRound = !immuneRound;
+    this.voteRoundData.err = DefaultVoteRound.err;
+    this.voteRoundData.player = DefaultVoteRound.player;
+    this.voteRoundData.ties = 0;
+    this.voteRoundData.immuneRound = !immuneRound;
     
   
     //! Maybe delete later for checking votes.
@@ -182,11 +189,11 @@ export class Game {
       .setDescription(`Here are the winners of tonight's squid game 👿`)
       .setImage("https://media.giphy.com/media/W29GyCAWS46qv1tG7Y/giphy.gif");
     
-    [...game.players].forEach(([id, player]) => {
+    [...this.players].forEach(([id, player]) => {
       mes.addFields([{ name: `Player ID: ${player.playerId}` , value: `<@${id}> with ${player.vote.tickets - TICKET_INC_DEATH} tickets remaining.\u200B` }]);
     });
   
-    [...game.players].forEach(([id, player]) => {
+    [...this.players].forEach(([id, player]) => {
       player.channel.send({ embeds: [mes] });
     });
   

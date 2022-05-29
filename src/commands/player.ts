@@ -3,7 +3,7 @@ import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
 import { game } from "..";
 import { GameStateType } from '../lib/types';
-import { MAX_PLAYERS } from '../lib/conts';
+import { MAX_PLAYERS, PLAYER_ROLE_ID } from '../lib/conts';
 import { JoinGame } from '../player';
  
 export default {
@@ -40,6 +40,8 @@ export default {
 		if (player) {
 			switch (command[1]) {
 				case COMMANDS.PLAYER.SUBCOMMANDS.READY.NAME:
+					if (game.state != GameStateType.READY) { await interaction.reply({ content: "The game has already started.", ephemeral: true }); return; }
+
 					await player.readyUp(interaction);
 					[...game.players].forEach(([id, otherPlayer]) => {
 						if (player != otherPlayer)
@@ -53,7 +55,7 @@ export default {
 				case COMMANDS.PLAYER.SUBCOMMANDS.SYNC.NAME:
 					const regex = /(?<=(voice:))[^\s]*/g;
 					let voice = command[2].match(regex)?.toString();
-					await player.sync(interaction, voice === "yes");
+					await player.sync(interaction, voice === "yes", true);
 					break;
 				default:
 					await interaction.reply({ content: "You are already a player in the game.", ephemeral: true });
@@ -66,6 +68,12 @@ export default {
 		
 				JoinGame(interaction, user);
 			}
+
+			if (command[1] === COMMANDS.PLAYER.SUBCOMMANDS.LEAVE.NAME) {
+				await user.roles.remove(PLAYER_ROLE_ID);
+				await interaction.reply({ content: "Your role has been removed.", ephemeral: true });
+			}
+
 		}
   },
 };

@@ -1,16 +1,17 @@
 import { Routes } from 'discord-api-types/v9';
-import { Client, SlashCommandSubcommandBuilder } from 'discord.js';
-import { CLIENT_ID, GUILD_ID, INCREMENT_MILLIS, TOKEN } from './lib/conts';
+import { Client, } from 'discord.js';
+import { CLIENT_ID, GUILD_ID, TOKEN } from './lib/conts';
 import { commandArr, commands, deploySlashCommands, rest } from './init/deploy-slash-commands';
 import { init } from './init/init';
 import { Game } from './game';
+import { COMMANDS } from './lib/commands';
 
-export const client = new Client({ intents: ["Guilds", "GuildVoiceStates"] });
+export const client = new Client({ intents: ["Guilds", "GuildVoiceStates", "GuildEmojisAndStickers"] });
 export const game = new Game();
 
 client.once("ready", async () => {
 	try {
-		init();
+		await init();
 		console.log('Started refreshing application (/) commands.');
 
 		deploySlashCommands();
@@ -30,14 +31,26 @@ client.on("interactionCreate", async (interaction) => {
 
 	let commandName: string[] = [];
 	
-	if (interaction.isSelectMenu()) {console.log(interaction.customId);}
+	if (interaction.isSelectMenu()) {
+		commandName = interaction.customId.split(' ');
 
-	if (interaction.isCommand()) commandName = interaction.toString().split(' ');
+		const id = commandName[commandName.length - 1];
+		if (id != interaction.user.id) {interaction.reply({ content: "These are not the select options you are looking for.", ephemeral: true }); return;}
+
+		commandName[commandName.length - 2] += interaction.values[0];
+	}
+	else if (interaction.isCommand()) {
+		commandName = interaction.toString().split(' ');
+	}
 	else if (interaction.isButton()) {
 		commandName = interaction.customId.split(' ');
 
 		const id = commandName[commandName.length - 1];
-		if (id != interaction.user.id) {interaction.reply({ content: "These are not the buttons you are looking for.", ephemeral: true }); return;}
+
+		if (commandName[1] === COMMANDS.PLAYER.SUBCOMMANDS.LEAVE.NAME || 
+			commandName[1] === COMMANDS.PLAYER.SUBCOMMANDS.JOIN.NAME ||
+			commandName[1] === COMMANDS.PLAYER.SUBCOMMANDS.SYNC.NAME) {}
+		else if (id != interaction.user.id) {interaction.reply({ content: "These are not the buttons you are looking for.", ephemeral: true }); return;}
 	} 
 	else return;
 

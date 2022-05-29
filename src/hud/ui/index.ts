@@ -1,7 +1,7 @@
-import { ButtonBuilder, EmbedBuilder, ActionRowBuilder, MessageActionRowComponentBuilder, ButtonStyle, Snowflake, APISelectMenuOption, SelectMenuBuilder } from "discord.js";
+import { ButtonBuilder, EmbedBuilder, ActionRowBuilder, MessageActionRowComponentBuilder, ButtonStyle, Snowflake, APISelectMenuOption, SelectMenuBuilder, APIEmbedField } from "discord.js";
 
 export class UI {
-  id: Snowflake
+  id: Snowflake;
   embed: EmbedBuilder;
   actionrows: ActionRowBuilder<MessageActionRowComponentBuilder>[];
   
@@ -69,12 +69,17 @@ export class UI {
     this.embed.setFields([]);
   }
 
-  createSelectMenu(command: string, options: APISelectMenuOption[]) {
+  createSelectMenu(command: string, label: string, options: APISelectMenuOption[]) {
     const menu = new SelectMenuBuilder()
       .setCustomId(command + ' ' + this.id)
+      .setPlaceholder(label)
       .setOptions(options);
 
     return menu;
+  }
+
+  addFields(...fields: APIEmbedField[]) {
+    this.embed.addFields(fields);
   }
 
   addWhiteSpace() {
@@ -85,6 +90,14 @@ export class UI {
       inline: false,
       }
     ]);
+  }
+
+  static whiteSpace(): APIEmbedField {
+    return {
+      name: "\u200B",
+      value: "\u200B",
+      inline: false,
+    };
   }
 
   init() {}

@@ -1,15 +1,21 @@
 import { CommandInteraction, Message, Snowflake } from "discord.js";
 import { Player } from "../player";
 import { UI } from "./ui";
-import { mapUI } from "./ui/map-ui";
-import { playerUI } from "./ui/player-ui";
+import { MapUI } from "./ui/map";
+import { PlayerUI } from "./ui/player";
+import { HelpUI } from "./ui/help";
 import { time } from "../lib/conts";
+import { ActivityUI } from "./ui/activity";
+import { PowerUpUI } from "./ui/powerup";
 
 const TIMEOUT_BUFFER = time.threeSec;
+ 
 
 export class HUD {
   id: Snowflake;
-  pui: playerUI;
+  pui: PlayerUI;
+  aui?: ActivityUI;
+  popui?: PowerUpUI;
   timeout?: NodeJS.Timeout;
   ui: UI;
 
@@ -17,7 +23,7 @@ export class HUD {
 
   constructor(id: Snowflake, player: Player) {
     this.id = id;
-    this.pui = new playerUI(id, player);
+    this.pui = new PlayerUI(id, player);
     this.ui = this.pui;
 
     this.message = Message.prototype;
@@ -27,13 +33,15 @@ export class HUD {
     if (interaction)
       await interaction.reply({ content: "Loading..." });
     
-      this.message = await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
+    this.message = await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
     
     if (interaction)
       await interaction.deleteReply();
   }
 
   async loadPlayerUI(interaction?: CommandInteraction, render?: boolean) {
+    if (this.timeout) {clearTimeout(this.timeout); this.timeout = undefined;}
+    
     this.pui.load();
 
     if (render)
@@ -47,30 +55,55 @@ export class HUD {
   }
 
   async init() {
+    this.message = await this.pui.player.channel.send({ content: `<@${this.pui.player.user.id}>` });
     this.ui.init();
-    this.message = await this.pui.player.channel.send({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
+    await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
   }
 
   async loadMap(interaction: CommandInteraction, command: string) {
-    if (!(this.ui instanceof mapUI))
-      this.ui = new mapUI(this.id);
+    if (!(this.ui instanceof MapUI))
+      this.ui = new MapUI(this.id);
 
     this.ui.load(command);
     this.render(interaction);
+  }
+
+  async loadHelp(interaction: CommandInteraction) {
+    this.ui = new HelpUI(this.id);
+    this.ui.load();
+    this.render(interaction);
+  }
+
+  async loadMoveError() {
+    this.ui = new HelpUI(this.id);
+
+    if (this.ui instanceof HelpUI)
+      this.ui.loadSync();
+    
+    this.render();
+  }
+
+  async loadKill() {
+    this.pui.kill();
+    this.loadPlayerUI(undefined, true);
   }
 
   async playerReadyChangeEvent() {
     if (this.timeout) return;
 
     this.timeout = setTimeout(async () => {
-      
-      this.timeout = undefined;
-      this.loadPlayerUI();
+
+      await this.loadPlayerUI();
 
     }, TIMEOUT_BUFFER + Math.floor(Math.random() * time.halfSec));
   }
 
   async searchRound() {
+    this.pui.searchRound();
+    await this.loadPlayerUI();
+  }
 
+  async loadTravel(interaction?: CommandInteraction) {
+    await this.loadPlayerUI(interaction);
   }
 }

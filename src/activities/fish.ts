@@ -1,24 +1,29 @@
 import { CommandInteraction, EmbedBuilder } from "discord.js";
-import { RegionActivity } from ".";
-import { convertTimer, DefaultTimer, INCREMENT_MILLIS, time } from "../lib/conts";
+import { GameActivity, PlayerActivityType } from ".";
+import { COMMANDS } from "../lib/commands";
+import { convertTimer, INCREMENT_MILLIS, time } from "../lib/conts";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
-const ACTIVITY_CHANCE = 0.10;
+const NAME = "Fish";
+const CATCH_CHANCE = 0.10;
 const MAX_TICKETS = 3;
+const FISH_TIME = time.thirtySec;
+const ROCK_TIME = time.thirtySec;
+const GIF = "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/0ab4b036812305.572a1cada9fdc.gif";
+const EMOJI = "🎣";
 
-export class Fish extends RegionActivity {
+export class Fish extends GameActivity {
   tickets: number;
-  activity = {
-    chance: ACTIVITY_CHANCE,
-    chanceModifier: 0,
-    doneTimer: time.thirtySec,
-  }
+  chance: number;
+  chanceModifier: number;
 
   constructor(region: GameLocation) {
-    super(region)
+    super(NAME, region, GIF, EMOJI);
 
     this.tickets = this.generateRandomTickets(MAX_TICKETS);
+    this.chance = CATCH_CHANCE;
+    this.chanceModifier = 0;
   }
 
   generateRandomTickets(tickets: number) {
@@ -26,8 +31,8 @@ export class Fish extends RegionActivity {
   }
 
   override newRound() {
-    this.activity.chance = ACTIVITY_CHANCE;
-    this.activity.chanceModifier = 0;
+    this.chance = CATCH_CHANCE;
+    this.chanceModifier = 0;
   }
 
   async arrivedMessage(player: Player) {
@@ -51,62 +56,90 @@ export class Fish extends RegionActivity {
     await player.channel.send({ embeds: [mes] });
   }
 
-  async fish(interaction: CommandInteraction, player: Player) {
-    player.activity.active = true;
-    player.activity.timer = convertTimer(this.activity.doneTimer);
+  override async update(interaction: CommandInteraction, player: Player, command: string) {
+    if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.JOIN) {
+      await this.fish(interaction, this.join(player, command));
+    } else if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.ROCK) {
+      await this.rock(interaction, this.join(player, command));
+    } else {
+      await interaction.reply({ content: "Not a valid command at this location.", ephemeral: true });
+    }
+  }
+
+
+
+
+  private async fish(interaction: CommandInteraction, x: PlayerActivityType) {
+    
+
+    x.timer = convertTimer(FISH_TIME);
     await interaction.reply("You cast your line...");
 
-    player.activity.timer.interval = setInterval(async () => {
-      player.activity.timer = convertTimer(player.activity.timer.milliseconds - INCREMENT_MILLIS);
+
+
+    x.timer.interval = setInterval(async () => {
+      x.timer = convertTimer(x.timer.milliseconds - INCREMENT_MILLIS);
     }, INCREMENT_MILLIS);
     
-    player.activity.timer.timeout = setTimeout(async () => {
-      if (player.activity.timer.interval) clearInterval(player.activity.timer.interval);
 
-      player.activity.active = false;
-      player.activity.timer = DefaultTimer;
 
-      if (this.tickets === 0 || Math.random() > this.activity.chance + this.activity.chanceModifier) { 
-        this.activity.chanceModifier += 0.01;
-        await player.channel.send("You caught nothing");
+    x.timer.timeout = setTimeout(async () => {
+      if (x.timer.interval) clearInterval(x.timer.interval);
+
+      if (this.tickets === 0 || Math.random() > this.chance + this.chanceModifier) { 
+        this.chanceModifier += 0.01;
+        await x.player.channel.send("You caught nothing");
         return;
       }
 
-      this.activity.chanceModifier = 0;
+      this.chanceModifier = 0;
       this.tickets -= 1;
-      player.vote.tickets += 1;
-      await this.fishCaughtMessage(player);
+      x.player.vote.tickets += 1;
+
       
-    }, this.activity.doneTimer);
+      await x.player.loadAct
+
+      this.leaveActivity(x);
+    }, FISH_TIME);
   }
 
-  async throwRock(interaction: CommandInteraction, player: Player) {
+
+
+
+
+  private async rock(interaction: CommandInteraction, x: PlayerActivityType) {
     let curModifier: number = 0;
-    if (this.activity.chance - ACTIVITY_CHANCE >= 0) this.activity.chance -= ACTIVITY_CHANCE;
+  
+    if (this.chance - CATCH_CHANCE >= 0) this.chance -= CATCH_CHANCE;
     else { 
-      if (this.activity.chanceModifier - ACTIVITY_CHANCE >= 0) { curModifier = ACTIVITY_CHANCE; this.activity.chanceModifier -= ACTIVITY_CHANCE; }
-      else { curModifier = this.activity.chanceModifier; this.activity.chanceModifier -= curModifier; }
+      if (this.chanceModifier - CATCH_CHANCE >= 0) { curModifier = CATCH_CHANCE; this.chanceModifier -= CATCH_CHANCE; }
+      else { curModifier = this.chanceModifier; this.chanceModifier -= curModifier; }
     }
-    player.activity.active = true;
-    player.activity.timer = convertTimer(this.activity.doneTimer);
+
+    x.timer = convertTimer(ROCK_TIME);
     await interaction.reply("You have thrown a rock...");
 
-    [...this.region.players].forEach(async ([key, player]) => {
-      await player.channel.send("Skadoosh...");
+    [...this.location.players].forEach(async ([key, player]) => {
+      await x.player.channel.send("Skadoosh...");
     });
 
-    player.activity.timer.interval = setInterval(async () => {
-      player.activity.timer = convertTimer(player.activity.timer.milliseconds - INCREMENT_MILLIS);
+
+
+    x.timer.interval = setInterval(async () => {
+      x.timer = convertTimer(x.timer.milliseconds - INCREMENT_MILLIS);
     }, INCREMENT_MILLIS);
 
-    player.activity.timer.timeout = setTimeout(async () => {
-      if (player.activity.timer.interval) clearInterval(player.activity.timer.interval);
 
-      this.activity.chanceModifier += curModifier;
-      this.activity.chance += ACTIVITY_CHANCE;
-      player.activity.active = false;
-      player.activity.timer = DefaultTimer;
 
-    }, this.activity.doneTimer);
+    x.timer.timeout = setTimeout(async () => {
+      if (x.timer.interval) clearInterval(x.timer.interval);
+
+      this.chanceModifier += curModifier;
+      this.chance += CATCH_CHANCE;
+
+
+      x.player.setActivity();
+      this.players.delete(x.player.user.id);
+    }, ROCK_TIME);
   }
 }

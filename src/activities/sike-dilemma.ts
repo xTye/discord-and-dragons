@@ -2,9 +2,12 @@ import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { RegionActivity } from ".";
 import { game } from "..";
 import { time } from "../lib/conts";
+import { Region } from "../locations/region";
 import { Player } from "../player";
 
 export enum JOIN { HELPEE, HELPER };
+export const GIF = "https://i.pinimg.com/originals/f2/b1/31/f2b13170c4a9b0432af961694563cdb2.gif";
+export const EMOJI = "🙏";
 
 export class SikeDilemma extends RegionActivity {
   activity = {
@@ -18,6 +21,9 @@ export class SikeDilemma extends RegionActivity {
                               If both players choose to vote, then <@${this.player1?.user.id}> gets a powerup to check the tickets of anyone in the game anytime during the game.\n
                               Otherwise, <@${this.player1?.user.id}> gets their tickets shown to everyone currently in the room.`;
 
+  constructor (region: Region) {
+    super(region, GIF, EMOJI);
+  }
 
   override newRound() {
     this.activity.done = false;

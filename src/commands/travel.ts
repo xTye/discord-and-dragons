@@ -3,6 +3,7 @@ import { CommandInteraction } from 'discord.js';
 import { game } from '..';
 import { COMMANDS } from '../lib/commands';
 import { GameStateType } from '../lib/types';
+import { Region } from '../locations/region';
  
 export function generateTravelChoices() {
   let choices: { name: string, value: string }[] = [];
@@ -15,16 +16,9 @@ export function generateTravelChoices() {
 }
 
 export default {
-  
-  //HEAD MAKE A COMMAND BUILDER FOR THESE SUBCOMMANDS FOR DYNAMIC CREATED MAPS 
-
 	data: new SlashCommandBuilder()
 		.setName(COMMANDS.TRAVEL.NAME)
 		.setDescription(COMMANDS.TRAVEL.DESCRIPTION)
-    .addSubcommand(option => 
-      option.setName(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.NAME)
-        .setDescription(COMMANDS.TRAVEL.SUBCOMMANDS.TIME.DESCRIPTION))    
-
   , 
   /**
    * Executes on travel command, checks if a player can travel
@@ -32,39 +26,26 @@ export default {
    * 
    * @param interaction used for reply
    */
-  async execute(interaction: CommandInteraction) {
-
-    if (game.state != GameStateType.SEARCH){
-      await interaction.reply("Game not in search phase");
-      return;
-    }
+  async execute(interaction: CommandInteraction, commands: string[]) {
 
     const player = game.players.get(interaction.user.id);
-    if (!player) await interaction.reply({ content: "You are not a player in the game", ephemeral: true });
+    if (!player) {await interaction.reply({ content: "You are not a player in the game.", ephemeral: true }); return;}
 
     else {
-      const subcommand = interaction.toString().split(" ");
-      switch (subcommand[1]){
-        //HEAD FIX "TO" AFTER BASIC IMPLIMENTATION IS DONE
-        case "to":
-          if (player.travel.traveling) {
-            await interaction.reply("You cannot travel while currently traveling");
-            return;
-          }
-          if (player.activity.active) {
-            await interaction.reply("You cannot travel while in an activity");
-            return;
-          }
-          const regex = /(?<=(location:))[^\s]*/g;
-          const destSnow = interaction.toString().match(regex)?.toString();
-          if (!destSnow) { await interaction.reply({ content: "Internal game error! ERROR CODE 1" }); return; }
-          const destination = game.regions.get(destSnow);
-          if (!destination) { await interaction.reply({ content: "Internal game error! ERROR CODE 2" }); return; }
-          await player.beginTravel(destination, interaction);
-            break;
-        case COMMANDS.TRAVEL.SUBCOMMANDS.TIME.NAME:  
-          await player.travelTime(interaction);
-            break;
+      if (game.state != GameStateType.SEARCH) {await interaction.reply({ content: "Game not in search phase.", ephemeral: true }); return;}
+      if (player.travel.traveling) {await interaction.reply({ content: "You cannot travel while currently traveling.", ephemeral: true }); return;}
+      if (player.activity) {await interaction.reply({ content: "You cannot travel while in an activity.", ephemeral: true }); return;}
+
+      const regex = /(?<=(select:))[^\s]*/g;
+      const selection = commands[1].match(regex)?.toString();
+      if (!selection) {
+        await player.beginTravel(interaction);
+      } else {
+        if (!(player.location instanceof Region)) {await interaction.reply({ content: "You must be at a region to select a destination.", ephemeral: true }); return;}
+        const destination = player.location.regions.get(selection);
+        await interaction.reply({ content: "Setting destination..." });
+        player.setDestination(destination);
+        await interaction.deleteReply();
       }
     }
   },

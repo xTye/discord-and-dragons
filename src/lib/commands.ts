@@ -3,18 +3,10 @@ export const COMMANDS = {
     NAME: "help",
     DESCRIPTION: "Lists all of the commands",
     SUBCOMMANDS: {
-      TRAVEL: {
-        NAME: "travel",
-        DESCRIPTION: "Displays all travel commands"
-      },
-      VOTE: {
-        NAME: "vote",
-        DESCRIPTION: "Displays all vote commands"
-      },
-      POWERUP: {
-        NAME: "pop",
-        DESCRIPTION: "Displays all powerup commands"
-      },
+      NAME: "state",
+      READY: "ready",
+      VOTE: "vote",
+      SEARCH: "search",
     },
   },
   PLAYER: {
@@ -33,6 +25,10 @@ export const COMMANDS = {
       },
       LEAVE: {
         NAME: "leave",
+        DESCRIPTION: "Leave a game"
+      },
+      SETDESCRIPTION: {
+        NAME: "setdescription",
         DESCRIPTION: "Leave a game"
       },
       SYNC: {
@@ -58,35 +54,9 @@ export const COMMANDS = {
   TRAVEL: {
     NAME: "travel",
     DESCRIPTION: "Parent command for all things to do with location",
-    SUBCOMMANDS: {
-      MEADOW: {
-        NAME: "meadow",
-        DESCRIPTION: "Travel to meadow.",
-      },
-      VOLCANO: {
-        NAME: "volcano",
-        DESCRIPTION: "Travel to volcano.",
-      },
-      COAST: {
-        NAME: "coast",
-        DESCRIPTION: "Travel to coast.",
-      },
-      OCEAN: {
-        NAME: "ocean",
-        DESCRIPTION: "Travel to ocean.",
-      },
-      CAVERN: {
-        NAME: "cavern",
-        DESCRIPTION: "Travel to cavern.",
-      },
-      LAIR: {
-        NAME: "lair",
-        DESCRIPTION: "Travel to the dragon's lair"
-      },
-      TIME: {
-        NAME: "time",
-        DESCRIPTION: "Displays current travel time"
-      },
+    SELECT: {
+      NAME: "select",
+      DESCRIPTION: "Select a location to travel to",
     },
   },
   VOTE: {
@@ -125,33 +95,15 @@ export const COMMANDS = {
       },
     },
   },
-  REGION: {
-    NAME: "region",
-    DESCRIPTION: "Parent command for region",
+  ACTIVITY: {
+    NAME: "activity",
+    DESCRIPTION: "Commands for an activites",
     SUBCOMMANDS: {
-      ROOM: {
-        NAME: "room",
-        DESCRIPTION: "Returns the current discord room your in"
-      },
-      PLAY: {
-        NAME: "play",
-        DESCRIPTION: "Play as the helpee or helper",
-      },
-      VOTE: {
-        NAME: "vote",
-        DESCRIPTION: "Vote for minigame for a specific region",
-      },
-      FISH: {
-        NAME: "fish",
-        DESCRIPTION: "Fish for a ticket",
-      },
-      ROCK: {
-        NAME: "rock",
-        DESCRIPTION: "Throw a rock",
-      },
-      PLAYERS: {
-        NAME: "players",
-        DESCRIPTION: "Get the players currently in the region",
+      DO: {
+        NAME: "do",
+        DESCRIPTION: "Do a command",
+        JOIN: "join",
+        ROCK: "rock",
       },
     },
   },

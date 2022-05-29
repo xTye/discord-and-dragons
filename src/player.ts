@@ -1,39 +1,35 @@
-import { APISelectMenuOption, ChannelType, CommandInteraction, EmbedBuilder, GuildMember, Message, PermissionFlagsBits, TextChannel, UnsafeSelectMenuBuilder } from "discord.js";
-import { Fish } from "./activities/fish";
-import { PrisonersDilemma } from "./activities/prisoners-dilemma";
-import { JOIN, SikeDilemma } from "./activities/sike-dilemma";
-import { convertTimer, DefaultTimer, INCREMENT_MILLIS, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME } from "./lib/conts";
+import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, ChannelType, CommandInteraction, Emoji, GuildEmoji, GuildMember, Message, PermissionFlagsBits, TextChannel } from "discord.js";
+import { convertTimer, CUSTOM_PLAYER_EMOJI, DefaultTimer, DEFAULT_DESCRIPTIONS, INCREMENT_MILLIS, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME } from "./lib/conts";
 import { Game } from "./game";
-import { TimerType } from "./lib/types";
+import { ConnectedRegion, GameStateType, TimerType } from "./lib/types";
 import { votes } from "./vote";
-import { Region } from "./locations/region";
 import { GameLocation } from "./locations";
-import { Route } from "./locations/route";
 import { game } from ".";
 import { HUD } from "./hud";
+import { GameActivity } from "./activities";
+import { SelectMenuOptionBuilder } from "@discordjs/builders";
 
 export class Player {
   game: Game;
   playerId: number;
   name: string;
+  picture: string;
   user: GuildMember;
   channel: TextChannel;
+  description: string;
+  emoji: APIMessageComponentEmoji;
+  selection: SelectMenuOptionBuilder;
+  field: APIEmbedField;
   location: GameLocation;
   ready: boolean;
   hud: HUD;
+  activity?: GameActivity;
   stats: {
     travelMult: number,
     searchMult: number,
   };
-  activity: {
-    active: boolean,
-    timer: TimerType,
-    prisonDilemma: boolean,
-    teamDilemmaParticipate: boolean,
-    teamDilemma: boolean,
-  };
   travel: {
-    destination?: Region;
+    destination?: ConnectedRegion;
     traveling: boolean;
     timer: TimerType;
   };
@@ -52,6 +48,7 @@ export class Player {
     game: Game,
     user: GuildMember,
     channel: TextChannel,
+    emoji: APIMessageComponentEmoji,
     location: GameLocation,
     tickets?: number,
     travelMult?: number,
@@ -60,25 +57,27 @@ export class Player {
     this.game = game;
     this.playerId = this.game.players.size + 1;
     this.name = user.nickname ? user.nickname : user.displayName;
+    this.picture = user.displayAvatarURL();
     this.user = user;
     this.channel = channel;
-    this.location = location,
+    this.description = DEFAULT_DESCRIPTIONS[Math.floor(Math.random() * DEFAULT_DESCRIPTIONS.length)];
+    this.emoji = emoji;
+    this.selection = new SelectMenuOptionBuilder()
+      .setValue(user.id)
+      .setLabel(this.name)
+      .setDescription(this.description)
+      .setEmoji(emoji);
+    this.field = { name: "Not ready", value: `<:${emoji.name}:${emoji.id}><@${user.id}>` };
+    this.location = location;
     this.hud = new HUD(user.id, this);
     this.ready = false;
     this.stats = {
       travelMult: travelMult ? travelMult : 0,
       searchMult: searchMult ? searchMult : 0,
     };
-    this.activity = {
-      active: false,
-      timer: DefaultTimer,
-      prisonDilemma: false,
-      teamDilemmaParticipate: false,
-      teamDilemma: false,
-    };
     this.travel = {
       traveling: false,
-      timer: DefaultTimer,
+      timer: DefaultTimer(),
     };
     this.vote = {
       immunity: false,
@@ -91,92 +90,84 @@ export class Player {
       checktick: 0,
     };
 
-    this.location.players.set(this.user.id, this);
+    this.location.playerJoined(this);
   }
 
   async readyUp(interaction: CommandInteraction) {
     this.ready = !this.ready;
+    this.field.name = this.ready ? "Ready" : "Not Ready";
+
+    if (this.ready)
+      game.readyQueue.push(true);
+    else
+      game.readyQueue.pop();
+
     await this.hud.loadPlayerUI(interaction);
   }
 
   async kill() {
     game.players.delete(this.user.id);
     await this.user.roles.remove(PLAYER_ROLE_ID);
+
+    if (game.state === GameStateType.READY)
+      await this.channel.delete();
   }
 
-  async sync(interaction: CommandInteraction, voice: boolean) {
-    await this.hud.loadPlayerUI(interaction);
+  async sync(interaction: CommandInteraction, voice: boolean, render?: boolean) {
+    await this.hud.loadPlayerUI(interaction, render);
     
     if (voice)
-      await this.move(this.location);
+      await this.move(this.location, true);
   }
 
-  async initPlayerHUD() {
-    await this.hud.init();
-  }
+  async move(dest: GameLocation, force?: boolean) {
+    if (!force && this.location == dest) return true;
 
-  async move(dest: GameLocation) {
-    if (this.location == dest) return true;
-
-    //DESC Check if can move, kill it can't
     try {
       await this.user.voice.setChannel(dest.channel.id);
+    } catch (err) {
+      console.log(this.name + " could not be moved.");
+      await this.hud.loadMoveError();
+      return false;
+    }
+
+    try {
       await this.user.voice.setSuppressed(false);
     } catch (err) {
-      try {
-        await this.user.voice.setSuppressed(false);
-        return true;
-      } catch (err) {}
-      await this.channel.send({ content: "Not in a voice channel, you have been removed from the game." })
-      await this.kill();
-      console.log(err);
-      console.log("Could not move player");
-      return false;
+      console.log(this.name + " could not unsupressed.");
+      await this.hud.loadMoveError();
+      return true;
     }
 
     return true;
   }
 
   async voteMove(dest: GameLocation) {
-    if (!(await this.move(dest))) return;
+    this.location.playerLeft(this);
 
-    this.location.players.delete(this.user.id);
+    if (!await this.move(dest)) {this.kill(); return;}
 
     if (this.travel.timer.timeout) clearTimeout(this.travel.timer.timeout);
     if (this.travel.timer.interval) clearInterval(this.travel.timer.interval);
-    if (this.activity.timer.timeout) clearTimeout(this.activity.timer.timeout);
-    if (this.activity.timer.interval) clearInterval(this.activity.timer.interval);
+    if (this.activity) this.activity.leave(this.activity.players.get(this.user.id));
     this.travel.destination = undefined;
-    this.travel.timer = DefaultTimer;
+    this.travel.timer = DefaultTimer();
     this.travel.traveling = false;
-    this.activity.prisonDilemma = false;
-    this.activity.timer = DefaultTimer;
-    this.activity.active = false;
 
     this.location = dest;
-    this.location.players.set(this.user.id, this);
+    this.location.playerJoined(this);
+  }
+
+  setActivity(activity?: GameActivity) {
+    this.activity = activity;
   }
 
 //# =========================================
 //HEAD This is the travel section
 //# =========================================
 
-  /**
-   * Sends an embedded message to indicate the time left between
-   * travel distances.
-   * 
-   * @param interaction 
-   */
-  async travelMessage(interaction: CommandInteraction, route: Route) {
-    const mes = new EmbedBuilder()
-      .setDescription(`You are on your way to ${this.travel.destination}`)
-      .setFields([{ name: "Time Left:", value: `${this.travel.timer.minutes}:${this.travel.timer.seconds < 10 ? "0" + this.travel.timer.seconds : this.travel.timer.seconds}` }])
-      .addFields([{ name: "Players in route", value: `\u200B` }]);
-    [...route.players].forEach(([id, player]) => {
-      mes.addFields([{ name: `Player ID: ${player.playerId}`, value: `<@${player.user.id}>`, inline: true }]);
-    });
-
-    await interaction.reply({ embeds: [mes] });
+  setDestination(destination?: ConnectedRegion) {
+    this.travel.destination = destination;
   }
 
   /**
@@ -185,56 +176,38 @@ export class Player {
    * @param destination id of channel
    * @param interaction used for reply
    */
-  async beginTravel(destination: Region, interaction: CommandInteraction) {
-    let route: Route | undefined = undefined;
-    
-    if (this.location instanceof Region) {
-      route = this.location.findPath(destination);
-    }
+  async beginTravel(interaction: CommandInteraction) {
+    if (!this.travel.destination) {await interaction.reply({ content: "Select a place to travel to.", ephemeral: true }); return;}
 
-    if (!route) {
-      await interaction.reply(`Can not travel to ${destination.channel.name} from ${this.location.channel.name}.`);
-      return;
-    }
+    await this.move(this.travel.destination.route);
 
-    if (!await this.move(this.location)) return;
-
-    this.location.players.delete(this.user.id);
-    this.location = route;
-    this.travel.timer.milliseconds = route.travelTime;
-    this.travel.destination = destination;
+    this.location.playerLeft(this);
+    this.location = this.travel.destination.route;
+    this.travel.timer.milliseconds = this.travel.destination.route.travelTime;
     this.travel.timer = convertTimer(this.travel.timer.milliseconds);
-    this.location.players.set(this.user.id, this);
-  
-    //DESC Simulate travel
-    const TRAVEL_TIME = this.travel.timer.milliseconds;
     this.travel.traveling = true;
+    this.location.playerJoined(this);
 
-    await this.travelMessage(interaction, route);
+    await this.hud.loadPlayerUI(interaction);
 
-    const interval = setInterval(async () => {
+    this.travel.timer.interval = setInterval(async () => {
       this.travel.timer = convertTimer(this.travel.timer.milliseconds - INCREMENT_MILLIS);
     }, INCREMENT_MILLIS);
   
-    const timeout = setTimeout(async () => {
-      clearInterval(interval);
+    this.travel.timer.timeout = setTimeout(async () => {
+      clearInterval(this.travel.timer.interval);
 
-      if (!this.travel.destination || !(await this.move(this.travel.destination))) return;
+      if (!this.travel.destination) {await interaction.reply({ content: "Internal game error, try joining the help voice channel and clicking sync in the help channel.", ephemeral: true }); return;}
 
-      //!sdfsdawait this.location.arrivedMessage(this);
-      this.location.players.delete(this.user.id);
-      this.location = this.travel.destination;
-      this.travel.timer = DefaultTimer;
+      this.location.playerLeft(this);
+      this.location = this.travel.destination.region;
+      this.travel.timer = DefaultTimer();
       this.travel.traveling = false;
-      this.location.players.set(this.user.id, this);
-    }, TRAVEL_TIME);
-  
-    this.travel.timer.timeout = timeout;
-    this.travel.timer.interval = interval;
-  }
+      this.travel.destination = undefined;
+      this.location.playerJoined(this);
 
-  async travelTime(interaction: Message | CommandInteraction) {
-    await interaction.reply(`You have ${this.travel.timer.minutes} minutes and ${this.travel.timer.seconds} seconds left of travel.`);
+      await this.hud.loadTravel();
+    }, this.travel.timer.milliseconds);
   }
 
 //# =========================================
@@ -260,64 +233,6 @@ export class Player {
     vote.numVotes += numVotes;
     
     await interaction.reply(`You have voted for <@${votee.user.id}> with ${numVotes} ticket(s).`);
-  }
-
-//# =========================================
-//HEAD This is the activity section
-//# =========================================
-
-  async activityTime(interaction: Message | CommandInteraction) {
-    await interaction.reply(`You have ${this.activity.timer.minutes} minutes and ${this.activity.timer.seconds} seconds left of travel.`);
-  }
-
-  async activityPlay(interaction: CommandInteraction, code: JOIN) {
-    if (this.activity.active) { await interaction.reply("Already apart of the game"); return; }
-
-    if (this.location instanceof Region && this.location.activity instanceof SikeDilemma) { await this.location.activity.joinGame(interaction, code, this); return; }
-
-    await interaction.reply("Cannot join the game for whatever reason.");
-  }
-
-  async activityVote(interaction: CommandInteraction, vote: boolean) {
-    if (!this.activity.active) { await interaction.reply("Cannot vote if not in a game"); return; }
-
-    if (this.location instanceof SikeDilemma) {
-      if (!this.location.activity.done) { await interaction.reply("Game hasn't started yet"); return; }
-      
-      this.activity.teamDilemma = vote;
-      await interaction.reply(`You have voted ${vote ? "Yes" : "No"}`);
-      return;
-    }
-
-    if (this.location instanceof PrisonersDilemma) {
-      this.activity.prisonDilemma = vote;
-      await interaction.reply(`You have voted ${vote ? "Yes" : "No"}`);
-      return;
-    }
-
-    await interaction.reply("Cannot vote for a game that you are not apart of");
-  }
-
-  async activityFish(interaction: CommandInteraction) {
-    if (this.activity.active) { await interaction.reply("You are already doing something"); return; }
-
-    if (this.location instanceof Fish) {
-      await this.location.fish(interaction, this);
-      return;
-    }
-
-    await interaction.reply("Cannot fish here.");
-  }
-
-  async activityRock(interaction: CommandInteraction) {
-    if (this.activity.active) { await interaction.reply("You are already doing something"); return; }
-
-    if (this.location instanceof Fish) {
-      await this.location.throwRock(interaction, this);
-      return;
-    }
-
-    await interaction.reply("You throw a rock.");
   }
 
 //# =========================================
@@ -351,31 +266,26 @@ export class Player {
  * Function for joining a game. Create a new player object, and adds the instance to 
  * the current players in the game.
  * 
- * @param interaction command
+ * @param interaction interaction from command map
  * @param user user in guild
  */
 export async function JoinGame(interaction: CommandInteraction, user: GuildMember) {
   
   if (!game.locationStart) { await interaction.reply({ content: "Set the game starting room.", ephemeral: true }); return; }
-
-  game.playerJoinQueue.push(true);
+  const name = user.nickname ? user.nickname : user.displayName;
 
   try{
     await user.voice.setChannel(game.locationStart.channel.id);
-    await user.voice.setSuppressed(false);
   } catch (err) {
+    console.log(name + " could not be moved.");
     await interaction.reply({ content: "Must be in a voice channel to play the game.", ephemeral: true });
-    game.playerJoinQueue.pop();
-    console.log("User not in a voice channel");
     return;
   }
 
-  
-  const name = user.nickname ? user.nickname : user.displayName;
   let channel: TextChannel;
 
   try {
-    channel = await playersCategory.channel.children.create(`${name}s-commands`, {
+    channel = await playersCategory.channel.children.create(`${name}s-hud`, {
       type: ChannelType.GuildText,
       permissionOverwrites: [
         {
@@ -393,22 +303,32 @@ export async function JoinGame(interaction: CommandInteraction, user: GuildMembe
       ],
   });
   } catch (err) {
-    game.playerJoinQueue.pop();
-    console.log("Could not setup player chanel correctly");
+    console.log("Could not setup player chanel correctly for " + name);
     return;
   }
 
-  const player: Player = new Player(game, user, channel, game.locationStart);
+  let emoji: APIMessageComponentEmoji;
 
-  [...game.players].forEach(async ([id, otherPlayer]) => {
-    if (otherPlayer != player)
-      await otherPlayer.hud.playerReadyChangeEvent();
-  });
+  try {
+    const emojiName = CUSTOM_PLAYER_EMOJI + '_' + user.id;
+    const ret = await user.guild.emojis.create(user.displayAvatarURL(), emojiName);
+    emoji = { id: ret.id, name: emojiName };
+  } catch (err) {
+    console.log("Could not create custom emoji for " + name);
+    return;
+  }
+
+  const player: Player = new Player(game, user, channel, emoji, game.locationStart);
 
   game.players.set(player.user.id, player);
-  await user.roles.add(PLAYER_ROLE_ID);
-  await player.initPlayerHUD();
-  game.playerJoinQueue.pop();
+  await player.user.roles.add(PLAYER_ROLE_ID);
+  await player.hud.init();
+  try{
+    await player.user.voice.setSuppressed(false);
+  } catch (err) {
+    console.log(player.name + " could not unsupressed.");
+    await player.hud.loadMoveError();
+  }
   await interaction.reply({ content: "A new channel has been created for you, please use this channel for all things command related.", ephemeral: true });
   console.log(`${player.name} has joined the game.`);
 }
