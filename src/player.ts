@@ -1,13 +1,45 @@
-import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, ChannelType, CommandInteraction, Emoji, GuildEmoji, GuildMember, Message, PermissionFlagsBits, TextChannel } from "discord.js";
-import { convertTimer, CUSTOM_PLAYER_EMOJI, DefaultTimer, DEFAULT_DESCRIPTIONS, INCREMENT_MILLIS, playersCategory, PLAYER_ROLE_ID, POWERUP_MUTE_TIME } from "./lib/conts";
-import { Game } from "./game";
-import { ConnectedRegion, GameStateType, TimerType } from "./lib/types";
+import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, CommandInteraction, GuildMember, Message, TextChannel } from "discord.js";
+import { convertTimer, DefaultTimer, DEFAULT_DESCRIPTIONS, INCREMENT_MILLIS, PLAYER_ROLE_ID, POWERUP_MUTE_TIME } from "./lib/conts";
+import { Game, GameStateType } from "./game";
+import { ConnectedRegion, TimerType } from "./lib/types";
 import { votes } from "./vote";
 import { GameLocation } from "./locations";
 import { game } from ".";
 import { HUD } from "./hud";
 import { GameActivity } from "./activities";
-import { SelectMenuOptionBuilder } from "@discordjs/builders";
+
+const DEFAULT_TICKETS = 1;
+
+class Inventory {
+  private storedTickets: number;
+  private spentTickets: number;
+
+  constructor(tickets?: number) {
+    this.storedTickets = tickets ? tickets : DEFAULT_TICKETS;
+    this.spentTickets = 0;
+  }
+
+  refundTickets() {
+    this.spentTickets = 0;
+  }
+
+  submitTickets() {
+    this.storedTickets = this.tickets;
+    this.spentTickets = 0;
+  }
+
+  set spendTickets(tickets: number) {
+    this.spendTickets += tickets;
+  }
+
+  set addTickets(tickets: number) {
+    this.storedTickets += tickets;
+  }
+
+  get tickets() {
+    return this.storedTickets - this.spentTickets;
+  }
+}
 
 export class Player {
   game: Game;
@@ -18,31 +50,23 @@ export class Player {
   channel: TextChannel;
   description: string;
   emoji: APIMessageComponentEmoji;
-  selection: SelectMenuOptionBuilder;
+  selection: APISelectMenuOption;
   field: APIEmbedField;
   location: GameLocation;
   ready: boolean;
   hud: HUD;
   activity?: GameActivity;
+  inventory: Inventory;
   stats: {
     travelMult: number,
     searchMult: number,
+    muted: boolean,
   };
   travel: {
     destination?: ConnectedRegion;
     traveling: boolean;
     timer: TimerType;
   };
-  vote: {
-    tickets: number;
-    spentTickets: number;
-    immunity: boolean;
-    muted: boolean;
-  };
-  powerups: {
-    mute: number,
-    checktick: number;
-  }
 
   constructor(
     game: Game,
@@ -62,32 +86,25 @@ export class Player {
     this.channel = channel;
     this.description = DEFAULT_DESCRIPTIONS[Math.floor(Math.random() * DEFAULT_DESCRIPTIONS.length)];
     this.emoji = emoji;
-    this.selection = new SelectMenuOptionBuilder()
-      .setValue(user.id)
-      .setLabel(this.name)
-      .setDescription(this.description)
-      .setEmoji(emoji);
+    this.selection = {
+      value: user.id,
+      label: this.name,
+      description: this.description,
+      emoji,
+    }
     this.field = { name: "Not ready", value: `<:${emoji.name}:${emoji.id}><@${user.id}>` };
     this.location = location;
     this.hud = new HUD(user.id, this);
     this.ready = false;
+    this.inventory = new Inventory(tickets);
     this.stats = {
       travelMult: travelMult ? travelMult : 0,
       searchMult: searchMult ? searchMult : 0,
+      muted: false,
     };
     this.travel = {
       traveling: false,
       timer: DefaultTimer(),
-    };
-    this.vote = {
-      immunity: false,
-      muted: false,
-      tickets: tickets ? tickets : 1,
-      spentTickets: 0,
-    };
-    this.powerups = {
-      mute: 0,
-      checktick: 0,
     };
 
     this.location.playerJoined(this);
@@ -108,8 +125,9 @@ export class Player {
   async kill() {
     game.players.delete(this.user.id);
     await this.user.roles.remove(PLAYER_ROLE_ID);
+    await this.user.voice.setSuppressed(true);
 
-    if (game.state === GameStateType.READY)
+    if (this.game.state === GameStateType.READY)
       await this.channel.delete();
   }
 
@@ -132,7 +150,8 @@ export class Player {
     }
 
     try {
-      await this.user.voice.setSuppressed(false);
+      if (!this.stats.muted)
+        await this.user.voice.setSuppressed(false);
     } catch (err) {
       console.log(this.name + " could not unsupressed.");
       await this.hud.loadMoveError();
@@ -140,22 +159,6 @@ export class Player {
     }
 
     return true;
-  }
-
-  async voteMove(dest: GameLocation) {
-    this.location.playerLeft(this);
-
-    if (!await this.move(dest)) {this.kill(); return;}
-
-    if (this.travel.timer.timeout) clearTimeout(this.travel.timer.timeout);
-    if (this.travel.timer.interval) clearInterval(this.travel.timer.interval);
-    if (this.activity) this.activity.leave(this.activity.players.get(this.user.id));
-    this.travel.destination = undefined;
-    this.travel.timer = DefaultTimer();
-    this.travel.traveling = false;
-
-    this.location = dest;
-    this.location.playerJoined(this);
   }
 
   setActivity(activity?: GameActivity) {
@@ -179,13 +182,12 @@ export class Player {
   async beginTravel(interaction: CommandInteraction) {
     if (!this.travel.destination) {await interaction.reply({ content: "Select a place to travel to.", ephemeral: true }); return;}
 
-    await this.move(this.travel.destination.route);
-
-    this.location.playerLeft(this);
-    this.location = this.travel.destination.route;
-    this.travel.timer.milliseconds = this.travel.destination.route.travelTime;
-    this.travel.timer = convertTimer(this.travel.timer.milliseconds);
     this.travel.traveling = true;
+    
+    this.location.playerLeft(this);
+    await this.move(this.travel.destination.route);
+    this.location = this.travel.destination.route;
+    this.travel.timer = convertTimer(this.travel.timer.milliseconds = this.travel.destination.route.travelTime);
     this.location.playerJoined(this);
 
     await this.hud.loadPlayerUI(interaction);
@@ -197,15 +199,16 @@ export class Player {
     this.travel.timer.timeout = setTimeout(async () => {
       clearInterval(this.travel.timer.interval);
 
-      if (!this.travel.destination) {await interaction.reply({ content: "Internal game error, try joining the help voice channel and clicking sync in the help channel.", ephemeral: true }); return;}
+      if (!this.travel.destination) {await ; return;}-----
 
       this.location.playerLeft(this);
+      await this.move(this.travel.destination.region);
       this.location = this.travel.destination.region;
       this.travel.timer = DefaultTimer();
-      this.travel.traveling = false;
-      this.travel.destination = undefined;
       this.location.playerJoined(this);
 
+      this.travel.destination = undefined;
+      this.travel.traveling = false;
       await this.hud.loadTravel();
     }, this.travel.timer.milliseconds);
   }
@@ -213,6 +216,40 @@ export class Player {
 //# =========================================
 //HEAD This is the vote section
 //# =========================================
+
+  async voteStart(dest: GameLocation) {
+    if (this.travel.timer.timeout) clearTimeout(this.travel.timer.timeout);
+    if (this.travel.timer.interval) clearInterval(this.travel.timer.interval);
+    if (this.activity) this.activity.leave(this.activity.players.get(this.user.id));
+
+
+    this.location.playerLeft(this);
+    if (!await this.move(dest)) {this.kill(); return;}
+    this.location = dest;
+    this.location.playerJoined(this);
+
+
+    this.travel.destination = undefined;
+    this.travel.timer = DefaultTimer();
+    this.travel.traveling = false;
+
+    this.inventory.refundTickets;
+    await this.game.setPlayerVote(this);
+  }
+
+  async voteEnd(tickets: number, refund?: boolean) {
+
+    if (!refund)
+      this.inventory.submitTickets;
+    this.inventory.refundTickets;
+    this.inventory.spendTickets = tickets;
+
+    if (this.game.vote.mutedPlayers.get(this.user.id)) {
+      this.game.vote.mutedPlayers.delete(this.user.id);
+
+      await this.user.voice.setSuppressed(false);
+    }
+  }
 
   async execVote(interaction: Message | CommandInteraction, votee: Player, numVotes: number) {
     
@@ -228,7 +265,7 @@ export class Player {
     else
       vote.voters.set(this.user.id, numVotes + playerVotedOnVotee);
   
-    this.vote.spentTickets += numVotes;
+    this.inventory.spendTickets = numVotes;
   
     vote.numVotes += numVotes;
     
@@ -243,92 +280,17 @@ export class Player {
     if (this.powerups.checktick <= 0) { await interaction.reply("You do not have a check tickets powerup"); return; }
 
     this.powerups.checktick--;
-    await interaction.reply(`<@${victim.user.id}> has **${victim.vote.tickets}**`);
+    await interaction.reply(`<@${victim.user.id}> has **${victim.inventory.tickets}**`);
   }
 
   async popMute(interaction: CommandInteraction, victim: Player) {
     if (this.powerups.mute <= 0) { await interaction.reply("You do not have a mute powerup"); return; }
 
     this.powerups.mute--;
-    await victim.user.voice.setMute(true);
+    await victim.user.voice.setSuppressed(true);
 
     setTimeout(async () => {
-      await victim.user.voice.setMute(false);
+      await victim.user.voice.setSuppressed(false);
     }, POWERUP_MUTE_TIME);
   }
 };
-
-
-/**
- * # ==========================================
- * HEAD Player joins a game.
- * # ==========================================
- * Function for joining a game. Create a new player object, and adds the instance to 
- * the current players in the game.
- * 
- * @param interaction interaction from command map
- * @param user user in guild
- */
-export async function JoinGame(interaction: CommandInteraction, user: GuildMember) {
-  
-  if (!game.locationStart) { await interaction.reply({ content: "Set the game starting room.", ephemeral: true }); return; }
-  const name = user.nickname ? user.nickname : user.displayName;
-
-  try{
-    await user.voice.setChannel(game.locationStart.channel.id);
-  } catch (err) {
-    console.log(name + " could not be moved.");
-    await interaction.reply({ content: "Must be in a voice channel to play the game.", ephemeral: true });
-    return;
-  }
-
-  let channel: TextChannel;
-
-  try {
-    channel = await playersCategory.channel.children.create(`${name}s-hud`, {
-      type: ChannelType.GuildText,
-      permissionOverwrites: [
-        {
-          id: user.id,
-          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.CreateInstantInvite],
-        },
-        {
-          id: user.guild.roles.everyone,
-          deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.CreateInstantInvite],
-        },
-        {
-          id: PLAYER_ROLE_ID,
-          deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.CreateInstantInvite, PermissionFlagsBits.CreateInstantInvite], 
-        },
-      ],
-  });
-  } catch (err) {
-    console.log("Could not setup player chanel correctly for " + name);
-    return;
-  }
-
-  let emoji: APIMessageComponentEmoji;
-
-  try {
-    const emojiName = CUSTOM_PLAYER_EMOJI + '_' + user.id;
-    const ret = await user.guild.emojis.create(user.displayAvatarURL(), emojiName);
-    emoji = { id: ret.id, name: emojiName };
-  } catch (err) {
-    console.log("Could not create custom emoji for " + name);
-    return;
-  }
-
-  const player: Player = new Player(game, user, channel, emoji, game.locationStart);
-
-  game.players.set(player.user.id, player);
-  await player.user.roles.add(PLAYER_ROLE_ID);
-  await player.hud.init();
-  try{
-    await player.user.voice.setSuppressed(false);
-  } catch (err) {
-    console.log(player.name + " could not unsupressed.");
-    await player.hud.loadMoveError();
-  }
-  await interaction.reply({ content: "A new channel has been created for you, please use this channel for all things command related.", ephemeral: true });
-  console.log(`${player.name} has joined the game.`);
-}

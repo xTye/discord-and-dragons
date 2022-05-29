@@ -1,101 +1,91 @@
-import { CommandInteraction, EmbedBuilder } from "discord.js";
-import { RegionActivity } from ".";
+import { CommandInteraction } from "discord.js";
+import { GameActivity, PlayerActivityType } from ".";
 import { game } from "..";
-import { time } from "../lib/conts";
-import { Region } from "../locations/region";
+import { COMMANDS } from "../lib/commands";
+import { DefaultTimer, time } from "../lib/conts";
+import { TimerType, YesString } from "../lib/types";
+import { GameLocation } from "../locations";
 import { Player } from "../player";
 
-export enum JOIN { HELPEE, HELPER };
-export const GIF = "https://i.pinimg.com/originals/f2/b1/31/f2b13170c4a9b0432af961694563cdb2.gif";
-export const EMOJI = "🙏";
+const HOWTO_JOIN = "You can join the activity here by applying to participate as a helper or helpee";
+const HOWTO_PLAY = `You have twenty seconds to choose to vote.\n
+If both players choose to vote, then the helpee gets a powerup to check the tickets of anyone in the game anytime during the game.\n
+Otherwise, the helpee gets their tickets shown to everyone currently in the room.`;
 
-export class SikeDilemma extends RegionActivity {
-  activity = {
-    done: false,
-    decideTimer: time.twentySec,
-  }
-  player1: Player | undefined = undefined;
-  player2: Player | undefined = undefined;
-  arrivedMessageString: string = `You can join the activity here by using the /region join <HELPEE or HELPER> command to participate in the activity.`;
-  gameMessageString: string = `You have twenty seconds to choose to help <@${this.player1?.user.id}>. Submit your vote by using the command /region vote.\n
-                              If both players choose to vote, then <@${this.player1?.user.id}> gets a powerup to check the tickets of anyone in the game anytime during the game.\n
-                              Otherwise, <@${this.player1?.user.id}> gets their tickets shown to everyone currently in the room.`;
+const NAME = "Sike Dilemma";
+const DECIDE_TIME = time.twentySec;
+const SAFE_START_TIME = DECIDE_TIME + time.fiveSec; 
+const GIF = "https://i.pinimg.com/originals/f2/b1/31/f2b13170c4a9b0432af961694563cdb2.gif";
+const EMOJI = "🙏";
 
-  constructor (region: Region) {
-    super(region, GIF, EMOJI);
+export class SikeDilemma extends GameActivity {
+  done: boolean;
+  timer: TimerType;
+  helper?: PlayerActivityType;
+  helpee?: PlayerActivityType;
+
+  constructor (location: GameLocation) {
+    super(NAME, location, GIF, EMOJI);
+
+    this.done = false;
+    this.timer = DefaultTimer();
   }
 
   override newRound() {
-    this.activity.done = false;
-    this.player1 = undefined;
-    this.player2 = undefined;
+    this.done = false;
+    this.helper = undefined;
+    this.helpee = undefined;
   }
 
-  async joinGame(interaction: CommandInteraction, code: JOIN, player: Player) {
-    if (game.timer.milliseconds <= time.thirtySec) { await interaction.reply("Not enough time to commence the game"); return; }
-    if (this.activity.done) { await interaction.reply("Game already commenced this round, please wait another round to play"); return; }
-
-    if (code === JOIN.HELPEE) {
-      if (this.player1) { await interaction.reply("There is already a helpee in the game"); return; }
-
-      this.player1 = player;
-      this.player1.activity.active = true;
-
-      await interaction.reply("You have joined the game as a helpee");
-    }
-
-    if (code === JOIN.HELPER) {
-      if (this.player2) { await interaction.reply("There is already a helper in the game"); return; }
-
-      this.player2 = player;
-      this.player2.activity.active = true;
-      
-      await interaction.reply("You have joined the game as a helper");
-    }
-
-    if (this.player1 && this.player2) {
-      this.startMiniGameTimer();
+  override async vote(interaction: CommandInteraction, x: PlayerActivityType, command: string) {
+    if (command.toLowerCase() === "yes" || command === "y" || command === "1") {
+      x.vote = true;
+      //!await x.player.hud.sdfsdf
     }
   }
 
-  async startMiniGameTimer() {
-    if (!this.player1 || !this.player2) return;
+  override async update(interaction: CommandInteraction, player: Player, command: string) {
+    if (game.timer.milliseconds <= SAFE_START_TIME) {await interaction.reply({ content: "Not enough time to commence the game.", ephemeral: true }); return;}
+    if (this.done) {await interaction.reply({ content: "Game already commenced this round, please wait another round to play.", ephemeral: true }); return;}
+    if (this.players.get(player.user.id)) {await interaction.reply({ content: "You are already a player in this game.", ephemeral: true }); return;}
 
-    this.activity.done = true;
     
-    this.player1.activity.active = true;
-    this.player2.activity.active = true;
-    await this.player1.user.voice.setMute(true);
-    await this.player2.user.voice.setMute(true);
-    //! DEPRECATED FIX LATER
-    //this.gameMessage();
 
-    setTimeout(async () => {
-      if (!this.player1 || !this.player2) return;
-      
-      this.player1.activity.active = false;
-      this.player2.activity.active = false;
-      await this.player1.user.voice.setMute(false);
-      await this.player2.user.voice.setMute(false);
+    if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.JOIN) {
+      if (this.helpee) { await interaction.reply("There is already a helpee in the game"); return; }
+      this.helpee = this.join(player);
+      //!await interaction.reply("You have joined the game as a helpee");
+    }
 
-      let resolved = false;
+    if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.ROCK) {
+      if (this.helper) { await interaction.reply("There is already a helper in the game"); return; }
+      this.helper = this.join(player);
+      //!await interaction.reply("You have joined the game as a helper");
+    }
 
-      if (this.player1.activity.teamDilemma && this.player2.activity.teamDilemma) {
-        this.player1.powerups.checktick += 1;
-        await this.player1.channel.send(`<@${this.player1.user.id}> recieved a check tickets powerup`);
-        await this.player2.channel.send(`<@${this.player1.user.id}> recieved a check tickets powerup`);
-        resolved = true;
-      }
+    if (this.helpee && this.helper) {
+      this.done = true;
+      //!this.gameMessage();
 
-      this.player1.activity.teamDilemma = false;
-      this.player2.activity.teamDilemma = false;
+      this.timer.timeout = setTimeout(async () => {
+        let resolved = false;
 
-      if (resolved) return;
+        if (this.helpee?.vote && this.helper?.vote) {
+          this.helpee.player.powerups.checktick += 1;
+          resolved = true;
+        }
 
-      [...this.region.players].forEach(async ([key, player]) => {
-        await player.channel.send(`<@${this.player1?.user.id}> has \`${this.player1?.vote.tickets}\` tickets remaining.`)
-      });
+        this.leave(this.helpee);
+        this.leave(this.helper);
 
-    }, this.activity.decideTimer);
+        if (resolved) return;
+
+        // [...this.region.players].forEach(async ([key, player]) => {
+        //   await player.hud.loadActivity({`<@${this.helpee?.player.user.id}> has \`${this.helpee?.player.vote.tickets}\` tickets remaining.`})
+        // });
+
+      }, DECIDE_TIME);
+    }
   }
+
 }

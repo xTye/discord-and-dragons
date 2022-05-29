@@ -6,8 +6,7 @@ import { Player } from "../player";
 
 export type PlayerActivityType = {
   player: Player;
-  timer: TimerType;
-  state: string;
+  timer?: TimerType;
   vote?: boolean;
 }
 
@@ -30,7 +29,7 @@ export class GameActivity {
 
   newRound() {
     this.players.forEach((x, id) => {
-      clearTimeout(x.timer.timeout);
+      clearTimeout(x.timer?.timeout);
       x.player.setActivity();
     });
 
@@ -39,11 +38,14 @@ export class GameActivity {
 
   async update(interaction: CommandInteraction, player: Player, command?: string) {}
 
-  join(player: Player, state: string, vote?: boolean) {
+  async vote(interaction: CommandInteraction, x: PlayerActivityType, command?: string) {
+    await interaction.reply({ content: "There is no vote at this location", ephemeral: true });
+  }
+
+  join(player: Player, timer?: TimerType, vote?: boolean) {
     const x: PlayerActivityType = {
       player,
-      timer: DefaultTimer(),
-      state,
+      timer,
       vote,
     };
 
@@ -56,8 +58,8 @@ export class GameActivity {
   leave(x?: PlayerActivityType) {
     if (!x) return;
 
-    clearInterval(x.timer.interval);
-    clearTimeout(x.timer.timeout);
+    clearInterval(x.timer?.interval);
+    clearTimeout(x.timer?.timeout);
     this.players.delete(x.player.user.id);
     x.player.setActivity();
   }

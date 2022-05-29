@@ -1,14 +1,12 @@
 import "dotenv/config";
 import { CategoryChannel, Snowflake, StageChannel, TextChannel } from "discord.js";
-import { ERR_CODES } from "../game";
-import { PowerUpsType, TimerType, VoteRoundType, VoteType } from "./types";
+import { PowerUpsType, TimerType } from "./types";
 import { Region } from "../locations/region";
 import { Route } from "../locations/route";
 import { game } from "..";
 import { SikeDilemma } from "../activities/sike-dilemma";
 import { Fish } from "../activities/fish";
 import { PrisonersDilemma } from "../activities/prisoners-dilemma";
-
 
 export const time = {
   fifteenMin    : 900000,
@@ -26,26 +24,14 @@ export const time = {
   oneSec        : 1000,
   halfSec       : 500,
 };
-
-export const MAX_PLAYERS = 8;
-export const MAX_ROUNDS = 2;
-export const MAX_TIES = 2;
-export const STARTING_ROUND = true;
 export const INCREMENT_MILLIS = time.oneSec;
+
 export const CUSTOM_PLAYER_EMOJI = "PLAYEREMOJI";
 
-
-export const SEARCH_TIME = time.fiveMin;
 export const POWERUP_MUTE_TIME = time.oneMin;
 
 //DESC This isn't used at the current moment
-export const LOST_CHANCE = 0.01
-
-
-export const VOTE_TIME = time.twoMin;
-export const TICKET_INC_IMMUNE = 1;
-export const TICKET_INC_DEATH = 1;
-export const LAST_WORDS = time.tenSec;
+export const LOST_CHANCE = 0.01;
 
 
 export const CLIENT_ID = process.env.CLIENT_ID ? process.env.CLIENT_ID : "";
@@ -399,32 +385,12 @@ export function convertTimer(milliseconds: number): TimerType {
   }
 };
 
-export const DefaultPowerUps: PowerUpsType = {
-  checkTickets: 0,
-  mute: 0,
-  prioritySpeak: 0,
-};
-
 export const DefaultTimer = () => ({
   milliseconds: 0,
   minutes: 0,
   seconds: 0,
   timeout: undefined,
   interval: undefined,
-})
+});
 
-export const DefaultVoteRound: VoteRoundType = { 
-  err: ERR_CODES.DEFAULT,
-  ties: 0,
-  player: "",
-  immuneRound: true,
-};
-
-export function Shuffle(array: any[]) {
-  let r = [];
-
-  while (array.length != 0)
-    r.push(array.splice(Math.floor(Math.random() * array.length), 1)[0]);
-
-  return r;
-}
+export const Random = (x: number) => Math.floor(Math.random() * x); 

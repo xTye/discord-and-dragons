@@ -17,19 +17,19 @@ export const COMMANDS = {
       DESCRIPTION: "Manage the state of the player",
       JOIN: {
         NAME: "join",
-        DESCRIPTION: "Join a game"
+        DESCRIPTION: "Join a game",
       },
       READY: {
         NAME: "ready",
-        DESCRIPTION: "Ready up in game"
+        DESCRIPTION: "Ready up in game",
       },
       LEAVE: {
         NAME: "leave",
-        DESCRIPTION: "Leave a game"
+        DESCRIPTION: "Leave a game",
       },
       SETDESCRIPTION: {
         NAME: "setdescription",
-        DESCRIPTION: "Leave a game"
+        DESCRIPTION: "Leave a game",
       },
       SYNC: {
         NAME: "sync",
@@ -45,11 +45,11 @@ export const COMMANDS = {
   },
   START: {
     NAME: "start",
-    DESCRIPTION: "Used to join a game"
+    DESCRIPTION: "Used to join a game",
   },
   TIME: {
     NAME: "time",
-    DESCRIPTION: "Returns the time left in the round"
+    DESCRIPTION: "Returns the time left in the round",
   },
   TRAVEL: {
     NAME: "travel",
@@ -104,6 +104,8 @@ export const COMMANDS = {
         DESCRIPTION: "Do a command",
         JOIN: "join",
         ROCK: "rock",
+        YES: "yes",
+        NO: "no",
       },
     },
   },
