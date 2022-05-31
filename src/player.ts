@@ -1,4 +1,4 @@
-import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, Collection, CommandInteraction, GuildMember, Snowflake, TextChannel } from "discord.js";
+import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, Collection, CommandInteraction, GuildMember, ReactionUserManager, Snowflake, TextChannel } from "discord.js";
 import { PLAYER_ROLE_ID } from "./lib/conts";
 import { Game } from "./game";
 import { GameLocation } from "./locations";
@@ -6,7 +6,7 @@ import { GameActivity } from "./activities";
 import { GameHUD } from "./hud";
 import { GameTimer } from "./lib/timer";
 import { ConnectedRegion } from "./locations/region";
-import { VoteRound, VoteType } from "./rounds/vote";
+import { VoteRound } from "./rounds/vote";
 import { GameItem } from "./items";
 
 const DEFAULT_TICKETS = 1;
@@ -28,6 +28,7 @@ class Inventory {
   private storedTickets: number;
   private spentTickets: number;
   private items: Collection<string, Item>;
+  private selection?: Item;
 
   constructor(tickets?: number) {
     this.storedTickets = tickets ? tickets : DEFAULT_TICKETS;
@@ -35,19 +36,30 @@ class Inventory {
     this.items = new Collection<string, Item>();
   }
 
-  addItem(newItem: GameItem) {
+  selectItem(item: Item) {
+    this.selection = item;
+  }
+
+  get getSelection() {
+    return this.selection;
+  }
+
+  getItem(name: string) {
+    return this.items.get(name);
+  }
+
+  addItem(newItem: GameItem, quantity?: number) {
     const item = this.items.get(newItem.name);
 
     if (item) {
-      item.quantity++;
+      item.quantity += quantity ? quantity : 1;
     } else {
-      this.items.set(newItem.name, { item: newItem, quantity: 1 });
+      this.items.set(newItem.name, { item: newItem, quantity: quantity ? quantity : 1 });
     }
   }
 
-  async consumeItem(interatction: CommandInteraction, item: Item) {
-    if (!item.item.func) {await interatction.reply({ content: "This item cannot be consumed.", ephemeral: true }); return;}
-    const usedItem = await item.item.use(interatction);
+  async consumeItem(interaction: CommandInteraction, item: Item) {
+    const usedItem = await item.item.use(interaction);
 
     if (usedItem) {
       item.quantity--;
@@ -162,6 +174,23 @@ export class Player {
   setDescription(interaction: CommandInteraction, description: string) {
     this.description = description;
     this.selection.description = description;
+  }
+
+  async selectItem(interaction: CommandInteraction, command: string) {
+    const item = this.inventory.getItem(command);
+    
+    if (!item) {await interaction.reply({ content: "You do not currently have this item.", ephemeral: true }); return;}
+    
+    this.inventory.selectItem(item);
+    this.hud.loadSelectItem(interaction);
+  }
+
+  async consumeItem(interaction: CommandInteraction) {
+    const item = this.inventory.getSelection;
+    if (!item) {interaction.reply({ content: "You must select a valid item to use.", ephemeral: true }); return;}
+
+    this.inventory.consumeItem(interaction, item);
+    this.hud.loadConsumeItem(interaction.replied ? undefined : interaction);
   }
 
   async kill() {

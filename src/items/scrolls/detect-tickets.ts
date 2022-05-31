@@ -9,7 +9,7 @@ waste its content and reap the consequences.`;
 const PICTURE = "https://media.giphy.com/media/nkDllc3W0Y2de0A1mU/giphy.gif";
 const EMOJI = { id: "980985746653610075", name: "scroll_fire", animated: true };
 
-export class SilenceScroll extends ScrollItem {
+export class DetectTicketsScroll extends ScrollItem {
   victim?: Player;
 
   constructor(player: Player) {

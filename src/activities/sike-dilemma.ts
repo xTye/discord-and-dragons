@@ -1,5 +1,6 @@
 import { CommandInteraction } from "discord.js";
 import { GameActivity, PlayerActivityType } from ".";
+import { DetectTicketsScroll } from "../items/scrolls/detect-tickets";
 import { COMMANDS } from "../lib/commands";
 import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
@@ -52,13 +53,13 @@ export class SikeDilemma extends GameActivity {
     if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.JOIN) {
       if (this.helpee) { await interaction.reply("There is already a helpee in the game"); return; }
       this.helpee = this.join(player);
-      //!await interaction.reply("You have joined the game as a helpee");
+      this.helpee.player.hud.loadActivity();
     }
 
     if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.ROCK) {
       if (this.helper) { await interaction.reply("There is already a helper in the game"); return; }
       this.helper = this.join(player);
-      //!await interaction.reply("You have joined the game as a helper");
+      this.helper.player.hud.loadActivity();
     }
 
     if (this.helpee && this.helper) {
@@ -70,7 +71,8 @@ export class SikeDilemma extends GameActivity {
         let resolved = false;
 
         if (this.helpee?.vote && this.helper?.vote) {
-          this.helpee.player.powerups.checktick += 1;
+          this.helpee.player.inventory.addItem(new DetectTicketsScroll());
+          this.helpee.player.hud.loadActivity();
           resolved = true;
         }
 
@@ -79,8 +81,10 @@ export class SikeDilemma extends GameActivity {
 
         if (resolved) return;
 
-        this.region.players.forEach((player, id) => {
-          player.hud.loadActivity({`<@${this.helpee?.player.user.id}> has \`${this.helpee?.player.vote.tickets}\` tickets remaining.`})
+        this.location.players.forEach((player, id) => {
+          //! Reveal player tickets.
+          if (player != this.helpee?.player)
+            player.hud.loadActivity();
         });
 
       }, DECIDE_TIME);

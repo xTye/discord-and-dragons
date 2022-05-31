@@ -7,9 +7,9 @@ Immediate:
 - Lock region for quick loading on activities
 
 Short Term:
-- Power up classes
-- Modular hud updates
-- Test role mentions with commands wjen priviladged
+- Modals
+- Lost mechanic
+- Test role mentions with commands when priviladged
 
 Long Term:
 - Add custom map creation

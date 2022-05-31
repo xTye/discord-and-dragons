@@ -1,5 +1,6 @@
 import { APIMessageComponentEmoji, Collection, ColorResolvable, Snowflake, StageChannel } from "discord.js";
 import { GameLocation } from ".";
+import { Game } from "../game";
 import { GameTimer } from "../lib/timer";
 import { Region } from "./region";
 
@@ -12,6 +13,7 @@ export class Route extends GameLocation {
   regions: Collection<Snowflake, Region>;
 
   constructor(
+    game: Game,
     channel: StageChannel,
     travelTime: number,
     picture: string,
@@ -21,7 +23,7 @@ export class Route extends GameLocation {
     emoji: APIMessageComponentEmoji,
     regions?: Collection<Snowflake, Region>,
     lostChance?: number) {
-    super(channel, picture, description, gif, color, emoji);
+    super(game, channel, picture, description, gif, color, emoji);
     
     this.lostChance = lostChance ? lostChance : LOST_CHANCE;
     this.travelTime = travelTime;

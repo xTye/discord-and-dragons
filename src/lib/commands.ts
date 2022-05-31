@@ -12,25 +12,49 @@ export const COMMANDS = {
   PLAYER: {
     NAME: "player",
     DESCRIPTION: "All commands related to being a game player",
-    SUBCOMMANDS: {
+    TRAVEL: {
+      NAME: "travel",
+      DESCRIPTION: "Parent command for all things to do with location",
+      SELECT: {
+        NAME: "select",
+        DESCRIPTION: "Select a location to travel to",
+      },
+    },
+    INVENTORY: {
+      NAME: "inventory",
+      DESCRIPTION: "Manage inventory",
+      SELECT: {
+        NAME: "select",
+        DESCRIPTION: "Select an item to load",
+        DETECTTICKETS: "Detect Tickets Scroll",
+        SILENCE: "Silence Scroll",
+      },
+    },
+    VOTE: {
+      NAME: "vote",
+      DESCRIPTION: "Vote for a player",
+      SELECT: "select",
+    },
+    ACTIVITY: {
+      NAME: "activity",
+      DESCRIPTION: "Commands for an activites",
+      SUBCOMMANDS: {
+        DO: {
+          NAME: "do",
+          DESCRIPTION: "Do a command",
+          JOIN: "join",
+          ROCK: "rock",
+          VOTE: "vote",
+        },
+      },
+    },
+    STATE: {
       NAME: "state",
       DESCRIPTION: "Manage the state of the player",
-      JOIN: {
-        NAME: "join",
-        DESCRIPTION: "Join a game",
-      },
-      READY: {
-        NAME: "ready",
-        DESCRIPTION: "Ready up in game",
-      },
-      LEAVE: {
-        NAME: "leave",
-        DESCRIPTION: "Leave a game",
-      },
-      SETDESCRIPTION: {
-        NAME: "setdescription",
-        DESCRIPTION: "Leave a game",
-      },
+      JOIN: "join",
+      READY: "ready",
+      LEAVE: "leave",
+      SETDESCRIPTION: "setdescription",
       SYNC: {
         NAME: "sync",
         DESCRIPTION: "Sync player state with game",
@@ -45,69 +69,7 @@ export const COMMANDS = {
   },
   START: {
     NAME: "start",
-    DESCRIPTION: "Used to join a game",
-  },
-  TIME: {
-    NAME: "time",
-    DESCRIPTION: "Returns the time left in the round",
-  },
-  TRAVEL: {
-    NAME: "travel",
-    DESCRIPTION: "Parent command for all things to do with location",
-    SELECT: {
-      NAME: "select",
-      DESCRIPTION: "Select a location to travel to",
-    },
-  },
-  VOTE: {
-    NAME: "vote",
-    DESCRIPTION: "Parent command for all things to do with voting.",
-    SUBCOMMANDS: {
-      TICKETS: {
-        NAME: "tickets",
-        DESCRIPTION: "Displays tickets left on you",
-      },
-      LIST: {
-        NAME: "list",
-        DESCRIPTION: "Displays all valid players one can vote for",
-      },
-      PLAYER: {
-        NAME: "player",
-        DESCRIPTION: "Vote for a player with your tickets",
-      },
-    },
-  },
-  POWERUP: {
-    NAME: "pop",
-    DESCRIPTION: "Parent command for power ups",
-    SUBCOMMANDS: {
-      CHECK_TICK: {
-        NAME: "ct",
-        DESCRIPTION: "Displays tickets on a player",
-      },
-      MUTE: {
-        NAME: "mute",
-        DESCRIPTION: "Mutes a player for a minute"
-      },
-      PRIO_SPK: {
-        NAME: "prio",
-        DESCRIPTION: "Grants yourself priority speaking"
-      },
-    },
-  },
-  ACTIVITY: {
-    NAME: "activity",
-    DESCRIPTION: "Commands for an activites",
-    SUBCOMMANDS: {
-      DO: {
-        NAME: "do",
-        DESCRIPTION: "Do a command",
-        JOIN: "join",
-        ROCK: "rock",
-        YES: "yes",
-        NO: "no",
-      },
-    },
+    DESCRIPTION: "Start a game",
   },
   MAP: {
     NAME: "map",

@@ -29,7 +29,6 @@ export const HELP_GIF = "https://i.pinimg.com/originals/0c/94/82/0c94826837dfe27
 
 
 
-
 export const playersCategory = {
   id: "967517776593965087",
   channel: CategoryChannel.prototype,
@@ -59,6 +58,7 @@ export const graph = {
     region: Region.prototype,
     setChannel(channel: StageChannel) {
       this.region = new Region(
+        game,
         channel,
         "In the ruins of an ancient citadel, a dragon stares down at you. You, standing small amongst the stones and smell of sulfur.",
         "https://i.imgur.com/lCeXqiq.png",
@@ -79,6 +79,7 @@ export const graph = {
     region: Region.prototype,
     setChannel(channel: StageChannel) {
       this.region = new Region(
+        game,
         channel,
         "https://i.imgur.com/paANsMg.png",
         "A sweat air blows through the grasses and clumps of tree. It is a warm summer afternoon, and you look down a winding trail to sheer cliffs, the dragon’s lair at your back.",
@@ -97,6 +98,7 @@ export const graph = {
     region: Region.prototype,
     setChannel(channel: StageChannel) {
       this.region = new Region(
+        game,
         channel,
         "https://i.imgur.com/6aERa1U.png",
         "The rock you clamber over cuts your hands; the fire burns your skin. This is a dangerous area, but the greatest offerings can be gathered on these ashen slopes.",
@@ -115,6 +117,7 @@ export const graph = {
     region: Region.prototype,
     setChannel(channel: StageChannel) {
       this.region = new Region(
+        game,
         channel,
         "https://i.imgur.com/9b12WCt.jpg",
         "You scan the waters in front of you, white foam and sea spray settling on your skin. The citadel sits behind you, and a cluster of rafts to your right beckon you onward.",
@@ -133,6 +136,7 @@ export const graph = {
     region: Region.prototype,
     setChannel(channel: StageChannel) {
       this.region = new Region(
+        game,
         channel,
         "https://i.imgur.com/sAWftdn.jpg",
         "An infinite abyss beckons beneath you, a chill pierces your bones. This is a dangerous area, but imagine what great plunder can be found below the waves.",
@@ -151,6 +155,7 @@ export const graph = {
     region: Region.prototype,
     setChannel(channel: StageChannel) {
       this.region = new Region(
+        game,
         channel,
         "https://i.imgur.com/AVLqOGl.png",
         "You scale down to the caves which wind beneath the citadel. You have chosen to test your luck in the winding tunnels, watching for the telltale gleam of your torch on gold and jewels.",
@@ -171,6 +176,7 @@ export const graph = {
       game.routes.set(
         this.id,
         new Route(
+          game,
           channel,
           GameTimer.thirtySec,
           "https://i.imgur.com/HtLQ53o.png",
@@ -192,6 +198,7 @@ export const graph = {
       game.routes.set(
         this.id,
         new Route(
+          game,
           channel,
           GameTimer.thirtySec,
           "https://i.imgur.com/T3VmNyD.png",
@@ -213,6 +220,7 @@ export const graph = {
       game.routes.set(
         this.id,
         new Route(
+          game,
           channel,
           GameTimer.fourtyFiveSec,
           "https://i.imgur.com/sG5l6rl.jpg",
@@ -234,6 +242,7 @@ export const graph = {
       game.routes.set(
         this.id,
         new Route(
+          game,
           channel,
           GameTimer.thirtySec,
           "https://i.imgur.com/pjE2iP8.png",
@@ -255,6 +264,7 @@ export const graph = {
       game.routes.set(
         this.id,
         new Route(
+          game,
           channel,
           GameTimer.thirtySec,
           "https://i.imgur.com/h7qdUeL.jpg",

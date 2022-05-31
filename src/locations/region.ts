@@ -1,5 +1,6 @@
 import { APIMessageComponentEmoji, APISelectMenuOption, Collection, ColorResolvable, Snowflake, StageChannel } from "discord.js";
 import { GameLocation } from ".";
+import { Game } from "../game";
 import { Route } from "./route";
 
 export type ConnectedRegion = {
@@ -13,13 +14,14 @@ export class Region extends GameLocation {
   regionSelections: APISelectMenuOption[];
 
   constructor(
+    game: Game,
     channel: StageChannel,
     picture: string,
     description: string,
     gif: string,
     color: ColorResolvable,
     emoji: APIMessageComponentEmoji) {
-      super(channel, picture, description, gif, color, emoji);
+      super(game, channel, picture, description, gif, color, emoji);
       this.routes = new Collection<Snowflake, Route>();
       this.regions = new Collection<Snowflake, ConnectedRegion>();
       this.regionSelections = [];

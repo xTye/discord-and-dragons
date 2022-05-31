@@ -30,13 +30,13 @@ export class SilenceScroll extends ScrollItem {
         await this.victim.user.voice.setSuppressed(true);
       
         this.victim.stats.muted.startTimer(async () => {
-          if (this.player.stats.muted) {
+          if (this.player.stats.muted && this.victim) {
             await this.victim.user.voice.setSuppressed(false);
           
             this.player.stats.muted = undefined;
           }
         }, SILENCE_TIME);
-      
+
         return this;
       },
     );

@@ -26,6 +26,7 @@ export class GameLocation {
     gif: string,
     color: ColorResolvable,
     emoji: APIMessageComponentEmoji) {
+      this.game = game;
       this.channel = channel;
       this.players = new Collection<Snowflake, Player>();
       this.playersFields = new Collection<Snowflake, APIEmbedField>();
