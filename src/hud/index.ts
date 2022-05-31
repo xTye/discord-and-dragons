@@ -4,7 +4,7 @@ import { MapUI } from "./ui/map";
 import { PlayerUI } from "./ui/player";
 import { HelpUI } from "./ui/help";
 import { ActivityUI } from "./ui/activity";
-import { PowerUpUI } from "./ui/powerup";
+import { InventoryUI } from "./ui/inventory";
 import { GameUI } from "./ui";
 import { GameTimer } from "../lib/timer";
 import { Game } from "../game";
@@ -16,10 +16,10 @@ export class GameHUD {
   rendering: boolean;
   renderPUI?: NodeJS.Timer;
   id: Snowflake;
-  ui: GameUI;
-  pui: PlayerUI;
-  aui?: ActivityUI;
-  popui?: PowerUpUI;
+  private ui: GameUI;
+  private pui: PlayerUI;
+  private aui?: ActivityUI;
+  private popui?: InventoryUI;
 
   message: Message;
 
@@ -104,13 +104,11 @@ export class GameHUD {
     this.loading = false;
   }
 
-  async loadKill() {
-    this.loading = true;
+  loadKill(interaction?: CommandInteraction) {
     clearInterval(this.renderPUI);
     this.pui.kill();
     this.ui = this.pui;
-    this.render();
-    this.loading = false;
+    this.render(interaction);
   }
 
   async searchRound() {

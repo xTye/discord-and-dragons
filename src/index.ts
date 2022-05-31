@@ -35,7 +35,7 @@ client.on("interactionCreate", async (interaction) => {
 		commandName = interaction.customId.split(' ');
 
 		const id = commandName[commandName.length - 1];
-		if (id != interaction.user.id) {interaction.reply({ content: "These are not the select options you are looking for.", ephemeral: true }); return;}
+		if (id != interaction.user.id) {await interaction.reply({ content: "These are not the select options you are looking for.", ephemeral: true }); return;}
 
 		commandName[commandName.length - 2] += interaction.values[0];
 	}
@@ -47,10 +47,9 @@ client.on("interactionCreate", async (interaction) => {
 
 		const id = commandName[commandName.length - 1];
 
-		if (commandName[1] === COMMANDS.PLAYER.SUBCOMMANDS.LEAVE.NAME || 
-			commandName[1] === COMMANDS.PLAYER.SUBCOMMANDS.JOIN.NAME ||
-			commandName[1] === COMMANDS.PLAYER.SUBCOMMANDS.SYNC.NAME) {}
-		else if (id != interaction.user.id) {interaction.reply({ content: "These are not the buttons you are looking for.", ephemeral: true }); return;}
+		if (commandName[1] === COMMANDS.PLAYER.STATE.SELECT.LEAVE || 
+			commandName[1] === COMMANDS.PLAYER.STATE.SELECT.JOIN) {}
+		else if (id != interaction.user.id) {await interaction.reply({ content: "These are not the buttons you are looking for.", ephemeral: true }); return;}
 	} 
 	else return;
 

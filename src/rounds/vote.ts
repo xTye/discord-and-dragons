@@ -1,6 +1,7 @@
 import { APISelectMenuOption, Collection, CommandInteraction, Snowflake } from "discord.js";
 import { GameRound } from ".";
 import { Game } from "../game";
+import { graph } from "../lib/conts";
 import { GameTimer } from "../lib/timer";
 import { Player } from "../player";
 
@@ -22,7 +23,7 @@ export class VoteRound extends GameRound {
   ties: number;
   player?: Player;
   immuneRound: boolean;
-  count: boolean;
+  counting: boolean;
   votes: Collection<Snowflake, VoteType>;
   selections: APISelectMenuOption[];
 
@@ -34,26 +35,29 @@ export class VoteRound extends GameRound {
 
     this.err = ERR_CODES.DEFAULT;
     this.ties = 0;
-    this.count = false;
+    this.counting = false;
     this.votes = new Collection<Snowflake, VoteType>();
     this.selections = [];
   }
 
-  async vote(interaction: CommandInteraction, player: Player, votes: VoteType, numVotes: number) {
-    if (!player.votee) {await interaction.reply({ content: "Your selection for a player is not valid.", ephemeral: true }); return;}
+  async vote(interaction: CommandInteraction, player: Player) {
+    if (this.counting) {await interaction.reply({ content: "Cannot submit votes when counting.", ephemeral: true }); return;}
+    if (!player.vote.tickets) {await interaction.reply({ content: "You must vote with a valid form of tickets.", ephemeral: true }); return;}
+    if (player.vote.tickets < player.inventory.tickets) {await interaction.reply({ content: "You cannot vote with more tickets than you have.", ephemeral: true }); return;}
+    if (!player.vote.player) {await interaction.reply({ content: "Your selection for a player is not valid.", ephemeral: true }); return;}
 
-    const vote = this.votes.get(player.votee.user.id);
+    const vote = this.votes.get(player.vote.player.user.id);
     if (!vote) {await interaction.reply({ content: "Cannot vote for this player.", ephemeral: true }); return;}
 
     const playerVotedOnVotee = vote.voters.get(player.user.id);
     if (!playerVotedOnVotee)
-      vote.voters.set(player.user.id, numVotes);
+      vote.voters.set(player.user.id, player.vote.tickets);
     else
-      vote.voters.set(player.user.id, numVotes + playerVotedOnVotee);
+      vote.voters.set(player.user.id, player.vote.tickets + playerVotedOnVotee);
   
-    player.inventory.spendTickets = numVotes;
+    player.inventory.spendTickets = player.vote.tickets;
   
-    vote.numVotes += numVotes;
+    vote.numVotes += player.vote.tickets;
     
     player.hud.loadVoted();
   }
@@ -73,7 +77,7 @@ export class VoteRound extends GameRound {
 
     //# Kills player if can't be moved
     this.game.players.forEach((player, id) => {
-      player.voteStart();
+      player.voteStart(this.game.locationVote ? this.game.locationVote : graph.lair.region, this);
     });
 
     this.game.players.forEach((player, id) => {
@@ -84,16 +88,16 @@ export class VoteRound extends GameRound {
 
   override start() {
     this.init();
-  
-    //DESC Fires when voting is done
-    this.timer.startTimer(() => {
 
+    this.timer.startTimer(() => {
+      this.iterator();
     }, VOTE_TIME);
   }
 
-  private voteRound() {
+  private iterator() {
     this.ties += 1;
-    this.countVotes();
+    this.count();
+
     if (this.ties < MAX_TIES) {
       if (this.err === ERR_CODES.SUCCESS) {
         this.end();
@@ -163,7 +167,7 @@ export class VoteRound extends GameRound {
     }
   }
 
-  private countVotes() {
+  private count() {
     //# No more iterations
     if (this.votes.size === 0) {
       this.err = ERR_CODES.TIE;

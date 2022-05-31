@@ -2,11 +2,12 @@ import { GameActivity, PlayerActivityType } from ".";
 import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { SilenceScroll } from "../items/scrolls/silence"
+import { CommandInteraction } from "discord.js";
 
 const HOWTO_JOIN = "You can join the activity here by idling in the room, with a random chance that you may be selected to participate.";
 const HOWTO_PLAY = `You have twenty seconds to vote.\n
 If both players choose to vote, then you both get muted in the voting round.\n
-If either player chooses to vote and the other doesn't, then the player who selects yes gets a mute powerup (mute a player for a minute anytime during the game)\n
+If either player chooses to vote and the other doesn't, then the player who selects yes gets a *silence scroll*\n
 If both players don't vote, then a random person in the room gets the mute powerup`;
 
 const NAME = "Prisoner's Dilemma";
@@ -30,6 +31,12 @@ export class PrisonersDilemma extends GameActivity {
     this.popChance = POP_CHANCE;
     this.done = false;
     this.timer = new GameTimer();
+  }
+
+  override async vote(interaction: CommandInteraction, x: PlayerActivityType, command: string) {
+    if (command.toLowerCase() === "yes" || command === "y" || command === "1")
+      x.vote = true;
+    await x.player.hud.loadActivity(interaction);
   }
 
   /**

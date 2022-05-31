@@ -12,6 +12,21 @@ export const COMMANDS = {
   PLAYER: {
     NAME: "player",
     DESCRIPTION: "All commands related to being a game player",
+    STATE: {
+      NAME: "state",
+      DESCRIPTION: "Manage the state of the player",
+      SELECT: {
+        NAME: "select",
+        DESCRIPTION: "Select an option",
+        JOIN: "join",
+        READY: "ready",
+        LEAVE: "leave",
+        LOAD_DESCRIPTION: "load_description",
+        SET_DESCRIPTION: "set_description",
+        SYNC_MESSAGE: "sync_message",
+        SYNC_VOICE: "sync_voice",
+        },
+      },
     TRAVEL: {
       NAME: "travel",
       DESCRIPTION: "Parent command for all things to do with location",
@@ -26,44 +41,30 @@ export const COMMANDS = {
       SELECT: {
         NAME: "select",
         DESCRIPTION: "Select an item to load",
-        DETECTTICKETS: "Detect Tickets Scroll",
-        SILENCE: "Silence Scroll",
       },
     },
     VOTE: {
       NAME: "vote",
       DESCRIPTION: "Vote for a player",
-      SELECT: "select",
+      SELECT: {
+        NAME: "select",
+        DESCRIPTION: "Select a player to vote for",
+      },
+      WITH: {
+        NAME: "with",
+        DESCRIPTION: "Vote for a player with a number of tickets",
+      }
     },
     ACTIVITY: {
       NAME: "activity",
       DESCRIPTION: "Commands for an activites",
-      SUBCOMMANDS: {
-        DO: {
-          NAME: "do",
-          DESCRIPTION: "Do a command",
-          JOIN: "join",
-          ROCK: "rock",
-          VOTE: "vote",
-        },
-      },
-    },
-    STATE: {
-      NAME: "state",
-      DESCRIPTION: "Manage the state of the player",
-      JOIN: "join",
-      READY: "ready",
-      LEAVE: "leave",
-      SETDESCRIPTION: "setdescription",
-      SYNC: {
-        NAME: "sync",
-        DESCRIPTION: "Sync player state with game",
-        SUBCOMMANDS: {
-          NAME: "voice",
-          DESCRIPTION: "Sync with voice?",
-          YES: "yes",
-          NO: "no",
-        },
+      SELECT: {
+        NAME: "select",
+        DESCRIPTION: "Select a command",
+        JOIN: "join",
+        ROCK: "rock",
+        VOTE_YES: "vote_yes",
+        VOTE_NO: "vote_no",
       },
     },
   },

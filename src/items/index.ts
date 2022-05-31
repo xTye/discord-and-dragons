@@ -9,6 +9,7 @@ export class GameItem {
   picture: string;
   emoji: string | APIMessageComponentEmoji;
   selection: APISelectMenuOption;
+  quantity: number;
   func?: (interaction: CommandInteraction) => Promise<GameItem | undefined>;
 
   constructor (
@@ -18,6 +19,7 @@ export class GameItem {
     picture: string,
     emoji: APIMessageComponentEmoji,
     func?: (interaction: CommandInteraction, command?: string) => Promise<GameItem | undefined>,
+    quantity?: number,
     ) {
       this.player = player;
       this.name = name;
@@ -31,6 +33,7 @@ export class GameItem {
         emoji,
       }
       this.func = func;
+      this.quantity = quantity ? quantity : 1;
   }
 
   async use(interaction: CommandInteraction) {

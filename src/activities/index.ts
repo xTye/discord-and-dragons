@@ -1,9 +1,11 @@
 import { ActionRowBuilder, APIMessageComponentEmoji, Collection, CommandInteraction, EmbedBuilder, MessageActionRowComponentBuilder, Snowflake } from "discord.js";
+import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
 export type PlayerActivityType = {
   player: Player;
+  timer: GameTimer;
   vote?: boolean;
 }
 
@@ -30,20 +32,23 @@ export class GameActivity {
     this.players.clear();
   }
 
-  async update(interaction: CommandInteraction, player: Player, command?: string) {}
-
-  async vote(interaction: CommandInteraction, x: PlayerActivityType, command?: string) {
-    await interaction.reply({ content: "There is no vote at this location", ephemeral: true });
+  async update(interaction: CommandInteraction, player: Player, command?: string) {
+    await interaction.reply({ content: "Cannot join an activity at this location.", ephemeral: true });
   }
 
-  join(player: Player, vote?: boolean) {
+  async vote(interaction: CommandInteraction, x: PlayerActivityType, command?: string) {
+    await interaction.reply({ content: "There is no vote at this location.", ephemeral: true });
+  }
+
+  protected join(player: Player, vote?: boolean) {
     const x: PlayerActivityType = {
       player,
+      timer: new GameTimer(),
       vote,
     };
 
     this.players.set(x.player.user.id, x);
-    x.player.setActivity(this);
+    x.player.setActivity({ activity: this, x });
 
     return x;
   }

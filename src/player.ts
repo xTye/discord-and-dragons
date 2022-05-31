@@ -2,7 +2,7 @@ import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, Collectio
 import { PLAYER_ROLE_ID } from "./lib/conts";
 import { Game } from "./game";
 import { GameLocation } from "./locations";
-import { GameActivity } from "./activities";
+import { GameActivity, PlayerActivityType } from "./activities";
 import { GameHUD } from "./hud";
 import { GameTimer } from "./lib/timer";
 import { ConnectedRegion } from "./locations/region";
@@ -19,33 +19,31 @@ export const DEFAULT_DESCRIPTIONS = [
   "A hero who saves the day",
 ];
 
-type Item = {
-  item: GameItem,
-  quantity: number,
-}
-
 class Inventory {
+  private player: Player;
   private storedTickets: number;
   private spentTickets: number;
-  private items: Collection<string, Item>;
-  private selection?: Item;
+  private items: Collection<string, GameItem>;
+  private select?: GameItem;
 
-  constructor(tickets?: number) {
+  constructor(player: Player, tickets?: number) {
+    this.player = player
     this.storedTickets = tickets ? tickets : DEFAULT_TICKETS;
     this.spentTickets = 0;
-    this.items = new Collection<string, Item>();
+    this.items = new Collection<string, GameItem>();
   }
 
-  selectItem(item: Item) {
-    this.selection = item;
-  }
-
-  get getSelection() {
-    return this.selection;
-  }
+  get getSelect() {return this.select;}
 
   getItem(name: string) {
     return this.items.get(name);
+  }
+
+  setItem(item?: GameItem) {
+    this.select = item;
+
+    if (item)
+      this.player.hud.loadSelectItem();
   }
 
   addItem(newItem: GameItem, quantity?: number) {
@@ -54,18 +52,19 @@ class Inventory {
     if (item) {
       item.quantity += quantity ? quantity : 1;
     } else {
-      this.items.set(newItem.name, { item: newItem, quantity: quantity ? quantity : 1 });
+      this.items.set(newItem.name, newItem);
     }
   }
 
-  async consumeItem(interaction: CommandInteraction, item: Item) {
-    const usedItem = await item.item.use(interaction);
+  consumeItem(interaction: CommandInteraction, item: GameItem) {
+    const usedItem = item.use(interaction);
+    if (!usedItem) return;
 
-    if (usedItem) {
-      item.quantity--;
-      if (item.quantity <= 0)
-        this.items.delete(item.item.name);
-    }
+    item.quantity--;
+    if (item.quantity <= 0)
+      this.items.delete(item.name);
+
+    this.player.hud.loadConsumeItem();
   }
 
   refundTickets() {
@@ -104,7 +103,10 @@ export class Player {
   location: GameLocation;
   ready: boolean;
   hud: GameHUD;
-  activity?: GameActivity;
+  activity?: {
+    activity: GameActivity;
+    x: PlayerActivityType;
+  };
   inventory: Inventory;
   stats: {
     travelMult: number;
@@ -116,7 +118,10 @@ export class Player {
     traveling: boolean;
     timer: GameTimer;
   };
-  votee?: Player;
+  vote: {
+    player?: Player;
+    tickets?: number;
+  };
 
   constructor(
     game: Game,
@@ -146,7 +151,7 @@ export class Player {
     this.location = location;
     this.hud = new GameHUD(user.id, this);
     this.ready = false;
-    this.inventory = new Inventory(tickets);
+    this.inventory = new Inventory(this, tickets);
     this.stats = {
       travelMult: travelMult ? travelMult : 0,
       searchMult: searchMult ? searchMult : 0,
@@ -155,6 +160,7 @@ export class Player {
       traveling: false,
       timer: new GameTimer(),
     };
+    this.vote = {}
 
     this.location.playerJoined(this);
   }
@@ -171,39 +177,28 @@ export class Player {
     this.hud.loadReadyUp(interaction);
   }
 
-  setDescription(interaction: CommandInteraction, description: string) {
-    this.description = description;
-    this.selection.description = description;
+  setDescription(description: string) {
+    const cut = description.length > 46 ? `${description.substring(0, 46)}..` : description;
+    this.description = cut;
+    this.selection.description = cut;
+    this.location.players.forEach((player, id) => {
+      player.hud.loadDescriptionChange();
+    });
   }
 
-  async selectItem(interaction: CommandInteraction, command: string) {
-    const item = this.inventory.getItem(command);
-    
-    if (!item) {await interaction.reply({ content: "You do not currently have this item.", ephemeral: true }); return;}
-    
-    this.inventory.selectItem(item);
-    this.hud.loadSelectItem(interaction);
-  }
-
-  async consumeItem(interaction: CommandInteraction) {
-    const item = this.inventory.getSelection;
-    if (!item) {interaction.reply({ content: "You must select a valid item to use.", ephemeral: true }); return;}
-
-    this.inventory.consumeItem(interaction, item);
-    this.hud.loadConsumeItem(interaction.replied ? undefined : interaction);
-  }
-
-  async kill() {
+  async kill(interaction?: CommandInteraction) {
     await this.game.removePlayer(this);
     await this.user.roles.remove(PLAYER_ROLE_ID);
     await this.user.voice.setSuppressed(true);
+    this.hud.loadKill(interaction);
   }
 
-  async sync(interaction: CommandInteraction, voice: boolean, render?: boolean) {
-    await this.hud.loadPlayerUI(interaction, render);
-    
-    if (voice)
-      await this.move(this.location.channel.id, true);
+  syncMessage(interaction: CommandInteraction) {
+    this.hud.loadPlayerUI(interaction);
+  }
+
+  syncVoice() {
+    this.move(this.location.channel.id, true);
   }
 
   async move(dest: Snowflake, force?: boolean) {
@@ -229,7 +224,7 @@ export class Player {
     return true;
   }
 
-  setActivity(activity?: GameActivity) {
+  setActivity(activity?: {activity: GameActivity, x: PlayerActivityType}) {
     this.activity = activity;
   }
 
@@ -273,13 +268,17 @@ export class Player {
 //HEAD This is the vote section
 //# =========================================
 
-  setVotee(player: Player) {
-    this.votee = player;
+  setVotePlayer(player?: Player) {
+    this.vote.player = player;
+  }
+
+  setVoteTickets(tickets?: number) {
+    this.vote.tickets = tickets;
   }
 
   voteStart(dest: GameLocation, round: VoteRound) {
     this.travel.timer.stopTimer();
-    if (this.activity) this.activity.leave(this.activity.players.get(this.user.id));
+    if (this.activity) this.activity.activity.leave(this.activity.x);
 
 
     if (this.game.mutedPlayers.get(this.user.id) && this.stats.muted)
@@ -305,7 +304,7 @@ export class Player {
       this.inventory.submitTickets;
 
     this.inventory.refundTickets;
-    this.inventory.spendTickets = tickets;
+    this.inventory.addTickets = tickets;
 
     if (this.game.mutedPlayers.get(this.user.id)) {
       this.game.mutedPlayers.delete(this.user.id);

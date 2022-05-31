@@ -7,8 +7,11 @@ import { GameLocation } from "./locations";
 import { GameTimer } from "./lib/timer";
 import { GameRound } from "./rounds/index";
 import { SearchRound } from "./rounds/search";
+import { VoteRound } from "./rounds/vote";
+import { game } from ".";
 
 export const MAX_PLAYERS = 8;
+const MIN_PLAYERS_LEFT = 3;
 const MAX_ROUNDS = 2;
 
 
@@ -72,12 +75,11 @@ export class Game {
       player.field.name = "___";
     });
 
-    this.round.start();
-    this.round.started = true;
+    this.newRound();
   }
 
   newRound() {
-    if (this.rounds >= MAX_ROUNDS) {
+    if (this.players.size <= ) {
       this.players.forEach((player, id) => {
         player.hud.loadEndResults();
       });
@@ -87,11 +89,15 @@ export class Game {
     this.rounds++;
 
     if (this.rounds % 2 == 1) {
-      this.round = new SearchRound();
-    } else if (this.rounds % 4) {
-      this.round =
+      this.round = new SearchRound(game);
+    } else if (this.rounds % 4 == 0) {
+      this.round = new VoteRound(game, false);
+    } else {
+      this.round = new VoteRound(game, true);
     }
 
+    this.round.start();
+    this.round.started = true;
   }
 
 

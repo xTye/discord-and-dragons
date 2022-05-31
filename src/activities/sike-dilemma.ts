@@ -6,7 +6,7 @@ import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
-const HOWTO_JOIN = "You can join the activity here by applying to participate as a helper or helpee";
+const HOWTO_JOIN = "You can join the activity here by applying to participate as a helper or helpee.";
 const HOWTO_PLAY = `You have twenty seconds to choose to vote.\n
 If both players choose to vote, then the helpee gets a powerup to check the tickets of anyone in the game anytime during the game.\n
 Otherwise, the helpee gets their tickets shown to everyone currently in the room.`;
@@ -37,10 +37,10 @@ export class SikeDilemma extends GameActivity {
   }
 
   override async vote(interaction: CommandInteraction, x: PlayerActivityType, command: string) {
-    if (command.toLowerCase() === "yes" || command === "y" || command === "1") {
+    if (command.toLowerCase() === "yes" || command === "y" || command === "1")
       x.vote = true;
-      await x.player.hud.loadActivityVote(interaction);
-    }
+    
+      await x.player.hud.loadActivity(interaction);
   }
 
   override async update(interaction: CommandInteraction, player: Player, command: string) {
@@ -50,13 +50,13 @@ export class SikeDilemma extends GameActivity {
 
 
 
-    if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.JOIN) {
+    if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN) {
       if (this.helpee) { await interaction.reply("There is already a helpee in the game"); return; }
       this.helpee = this.join(player);
       this.helpee.player.hud.loadActivity();
     }
 
-    if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.ROCK) {
+    if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK) {
       if (this.helper) { await interaction.reply("There is already a helper in the game"); return; }
       this.helper = this.join(player);
       this.helper.player.hud.loadActivity();
@@ -71,7 +71,7 @@ export class SikeDilemma extends GameActivity {
         let resolved = false;
 
         if (this.helpee?.vote && this.helper?.vote) {
-          this.helpee.player.inventory.addItem(new DetectTicketsScroll());
+          this.helpee.player.inventory.addItem(new DetectTicketsScroll(this.helpee.player));
           this.helpee.player.hud.loadActivity();
           resolved = true;
         }

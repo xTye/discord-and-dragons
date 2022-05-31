@@ -1,18 +1,18 @@
-import { CommandInteraction, EmbedBuilder } from "discord.js";
+import { CommandInteraction } from "discord.js";
 import { GameActivity, PlayerActivityType } from ".";
 import { COMMANDS } from "../lib/commands";
-import { convertTimer, DefaultTimer, INCREMENT_MILLIS, time } from "../lib/conts";
+import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
-const HOWTO_JOIN = "You can join the activity here by throwing a line or throwing a rock";
-const HOWTO_PLAY = `Sit back, relax, talk to your peers and watch your line`;
+const HOWTO_JOIN = "You can join the activity here by throwing a line or throwing a rock.";
+const HOWTO_PLAY = `Sit back, relax, talk to your peers and watch your line.`;
 
 const NAME = "Fish";
 const CATCH_CHANCE = 0.10;
 const MAX_TICKETS = 3;
-const FISH_TIME = time.thirtySec;
-const ROCK_TIME = time.thirtySec;
+const FISH_TIME = GameTimer.thirtySec;
+const ROCK_TIME = GameTimer.thirtySec;
 const GIF = "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/0ab4b036812305.572a1cada9fdc.gif";
 const EMOJI = "🎣";
 
@@ -38,32 +38,13 @@ export class Fish extends GameActivity {
     this.chanceModifier = 0;
   }
 
-  async arrivedMessage(player: Player) {
-    const mes = new EmbedBuilder()
-      .setDescription(`You can either fish for a ticket using the /region fish command or throw a rock using the /region rock command.`);
-    
-    await player.channel.send({ embeds: [mes] });
-  }
 
-  async fishCaughtMessage(player: Player) {
-    const mes = new EmbedBuilder()
-      .setDescription("You caught a fish!");
-    
-    await player.channel.send({ embeds: [mes] });
-  }
-
-  async throwRockMessage(player: Player) {
-    const mes = new EmbedBuilder()
-      .setDescription("You threw a rock");
-    
-    await player.channel.send({ embeds: [mes] });
-  }
 
   override async update(interaction: CommandInteraction, player: Player, command: string) {
-    if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.JOIN) {
-      await this.fish(interaction, this.join(player, DefaultTimer()));
-    } else if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.ROCK) {
-      await this.rock(interaction, this.join(player, DefaultTimer()));
+    if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN) {
+      this.fish(interaction, this.join(player));
+    } else if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK) {
+      this.rock(interaction, this.join(player));
     } else {
       await interaction.reply({ content: "Not a valid command at this location.", ephemeral: true });
     }
@@ -72,35 +53,19 @@ export class Fish extends GameActivity {
 
 
 
-  private async fish(interaction: CommandInteraction, x: PlayerActivityType) {
+  private fish(interaction: CommandInteraction, x: PlayerActivityType) {
+    x.player.hud.loadActivity(interaction);
     
-
-    x.timer = convertTimer(FISH_TIME);
-    await interaction.reply("You cast your line...");
-
-
-    x.timer.interval = setInterval(async () => {
-      if (x.timer) x.timer = convertTimer(x.timer.milliseconds - INCREMENT_MILLIS);
-    }, INCREMENT_MILLIS);
-    
-
-
-    x.timer.timeout = setTimeout(async () => {
-      clearInterval(x.timer?.interval);
-
+    x.timer.startTimer(() => {
       if (this.tickets === 0 || Math.random() > this.chance + this.chanceModifier) { 
         this.chanceModifier += 0.01;
-        await x.player.channel.send("You caught nothing");
-        return;
+      } else {
+        this.chanceModifier = 0;
+        this.tickets -= 1;
+        x.player.inventory.addTickets = 1;
       }
 
-      this.chanceModifier = 0;
-      this.tickets -= 1;
-
-
-      x.player.inventory.addTickets = 1;
-
-      //!await x.player.loadAct
+      x.player.hud.loadActivityDone();
 
       this.leave(x);
     }, FISH_TIME);
@@ -110,7 +75,7 @@ export class Fish extends GameActivity {
 
 
 
-  private async rock(interaction: CommandInteraction, x: PlayerActivityType) {
+  private rock(interaction: CommandInteraction, x: PlayerActivityType) {
     let curModifier: number = 0;
   
     if (this.chance - CATCH_CHANCE >= 0) this.chance -= CATCH_CHANCE;
@@ -119,26 +84,17 @@ export class Fish extends GameActivity {
       else { curModifier = this.chanceModifier; this.chanceModifier -= curModifier; }
     }
 
-    x.timer = convertTimer(ROCK_TIME);
-    //!await interaction.reply("You have thrown a rock...");
-    // [...this.location.players].forEach(async ([key, player]) => {
-    //   await x.player.channel.send("Skadoosh...");
-    // });
+    x.player.hud.loadActivity(interaction);
+    this.location.players.forEach((player, id) => {
+      x.player.hud.loadActivity();
+    });
 
 
-    x.timer.interval = setInterval(async () => {
-      if (x.timer) x.timer = convertTimer(x.timer.milliseconds - INCREMENT_MILLIS);
-    }, INCREMENT_MILLIS);
-
-
-
-    x.timer.timeout = setTimeout(async () => {
-      clearInterval(x.timer?.interval);
-
+    x.timer.startTimer(() => {
       this.chanceModifier += curModifier;
       this.chance += CATCH_CHANCE;
 
-      //!await x.player.hud.activityDone
+      x.player.hud.loadActivityDone();
 
       this.leave(x);
     }, ROCK_TIME);
