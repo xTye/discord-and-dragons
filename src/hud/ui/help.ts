@@ -1,11 +1,10 @@
 import { EmbedBuilder } from "@discordjs/builders";
 import { ActionRowBuilder, APIEmbedField, ButtonBuilder, ButtonStyle, MessageActionRowComponentBuilder, MessageOptions, Snowflake } from "discord.js";
-import { UI } from ".";
+import { GameUI } from ".";
 import { game } from "../..";
-import { COLOSSEUM, HELP_GIF, LAIR_EMOJI } from "../../lib/conts";
-import { GameStateType } from "../../lib/types";
+import { HELP_GIF } from "../../lib/conts";
 
-export class HelpUI extends UI {
+export class HelpUI extends GameUI {
   constructor(id: Snowflake) {
       super(id);
 
@@ -136,7 +135,7 @@ export class HelpUI extends UI {
     else if (game.state === GameStateType.SEARCH) {
       this.addFields(
         HelpUI.search(),
-        UI.whiteSpace(),
+        GameUI.whiteSpace(),
         HelpUI.activity(),
       );
     }

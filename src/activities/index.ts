@@ -1,12 +1,9 @@
-import { APIMessageComponentEmoji, CommandInteraction, EmbedBuilder, Snowflake } from "discord.js";
-import { DefaultTimer } from "../lib/conts";
-import { TimerType } from "../lib/types";
+import { ActionRowBuilder, APIMessageComponentEmoji, Collection, CommandInteraction, EmbedBuilder, MessageActionRowComponentBuilder, Snowflake } from "discord.js";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
 export type PlayerActivityType = {
   player: Player;
-  timer?: TimerType;
   vote?: boolean;
 }
 
@@ -15,24 +12,21 @@ export class GameActivity {
   location: GameLocation;
   gif: string;
   emoji: APIMessageComponentEmoji | string;
-  players: Map<Snowflake, PlayerActivityType>;
-  ui: EmbedBuilder;
+  players: Collection<Snowflake, PlayerActivityType>;
 
   constructor(name: string, location: GameLocation, gif?: string, emoji?: APIMessageComponentEmoji | string) {
     this.name = name;
     this.location = location;
     this.gif = gif ? gif : this.location.gif;
     this.emoji = emoji ? emoji : this.location.emoji;
-    this.players = new Map<Snowflake, PlayerActivityType>;
-    this.ui = new EmbedBuilder();
+    this.players = new Collection<Snowflake, PlayerActivityType>;
+  }
+
+  actionRows(): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
+    return [];
   }
 
   newRound() {
-    this.players.forEach((x, id) => {
-      clearTimeout(x.timer?.timeout);
-      x.player.setActivity();
-    });
-
     this.players.clear();
   }
 
@@ -42,10 +36,9 @@ export class GameActivity {
     await interaction.reply({ content: "There is no vote at this location", ephemeral: true });
   }
 
-  join(player: Player, timer?: TimerType, vote?: boolean) {
+  join(player: Player, vote?: boolean) {
     const x: PlayerActivityType = {
       player,
-      timer,
       vote,
     };
 
@@ -57,9 +50,6 @@ export class GameActivity {
 
   leave(x?: PlayerActivityType) {
     if (!x) return;
-
-    clearInterval(x.timer?.interval);
-    clearTimeout(x.timer?.timeout);
     this.players.delete(x.player.user.id);
     x.player.setActivity();
   }

@@ -2,9 +2,8 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
 import { game } from "..";
-import { GameStateType } from '../lib/types';
-import { MAX_PLAYERS, PLAYER_ROLE_ID } from '../lib/conts';
-import { JoinGame } from '../player';
+import { GameStateType, MAX_PLAYERS } from '../game';
+import { PLAYER_ROLE_ID } from '../lib/conts';
  
 export default {
 	data: new SlashCommandBuilder()
@@ -43,7 +42,7 @@ export default {
 					if (game.state != GameStateType.READY) { await interaction.reply({ content: "The game has already started.", ephemeral: true }); return; }
 
 					await player.readyUp(interaction);
-					[...game.players].forEach(([id, otherPlayer]) => {
+					player.game.players.forEach((otherPlayer, id) => {
 						if (player != otherPlayer)
 							otherPlayer.hud.playerReadyChangeEvent();
 					});
@@ -66,7 +65,7 @@ export default {
 				if (game.state !== GameStateType.READY) { await interaction.reply({ content: "Game has already started.", ephemeral: true }); return; }
 				if (game.players.size >= MAX_PLAYERS) { await interaction.reply({ content: "The game is currently full.", ephemeral: true }); return; }
 		
-				JoinGame(interaction, user);
+				game.joinGame(interaction, user);
 			}
 
 			if (command[1] === COMMANDS.PLAYER.SUBCOMMANDS.LEAVE.NAME) {

@@ -1,11 +1,19 @@
 
 import { ButtonStyle, EmbedBuilder } from "discord.js";
-import { UI } from ".";
+import { GameUI } from ".";
 import { game } from "../..";
-import { COLOSSEUM_EMBED, KILL_MESSAGES, MAP } from "../../lib/conts";
-import { GameStateType } from "../../lib/types";
+import { COLOSSEUM_EMBED, MAP } from "../../lib/conts";
 import { Region } from "../../locations/region";
 import { Player } from "../../player";
+
+const KILL_MESSAGES = [
+  "Well played ",
+  "Better luck next time ",
+  "Almost ",
+  "Killer work ",
+  "This game sucked anyway ",
+];
+
 
 enum ReadyRows { main = 0 }
 enum ReadyButtons { map = 0, ready, start, description, help }
@@ -14,7 +22,7 @@ enum SearchRows { travel = 0, main }
 enum SearchTravelComponents { select = 0 }
 enum SearchMainComponents { map = 0, travel, activity, powerup, help }
 
-export class PlayerUI extends UI {
+export class PlayerUI extends GameUI {
   player: Player;
 
   constructor(id: string, player: Player) {
@@ -27,7 +35,7 @@ export class PlayerUI extends UI {
       .setTitle(`Hey, ${this.player.name}`)
       .setColor("#c94b68")
       .setDescription(`Welcome to the game! Here is a list of people who are also in the lobby.`)
-      .setAuthor({ name: `Tickets: ${this.player.vote.tickets}`, iconURL: this.player.picture})
+      .setAuthor({ name: `Tickets: ${this.player.inventory.tickets}`, iconURL: this.player.picture})
       .setThumbnail(MAP)
       .setImage(COLOSSEUM_EMBED)
       .setFooter({ text: `Time: ${this.player.travel.timer.minutes}:${this.player.travel.timer.seconds < 10 ? "0" + this.player.travel.timer.seconds : this.player.travel.timer.seconds}`, iconURL: this.player.location.picture })
@@ -63,7 +71,7 @@ export class PlayerUI extends UI {
       "Set Description",
       ButtonStyle.Secondary,
       "📝",
-    )
+    );
 
     const helpButton = this.createButton(
       "/help state:" + game.state,

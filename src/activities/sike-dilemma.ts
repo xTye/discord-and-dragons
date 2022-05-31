@@ -1,9 +1,7 @@
 import { CommandInteraction } from "discord.js";
 import { GameActivity, PlayerActivityType } from ".";
-import { game } from "..";
 import { COMMANDS } from "../lib/commands";
-import { DefaultTimer, time } from "../lib/conts";
-import { TimerType, YesString } from "../lib/types";
+import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
@@ -13,14 +11,14 @@ If both players choose to vote, then the helpee gets a powerup to check the tick
 Otherwise, the helpee gets their tickets shown to everyone currently in the room.`;
 
 const NAME = "Sike Dilemma";
-const DECIDE_TIME = time.twentySec;
-const SAFE_START_TIME = DECIDE_TIME + time.fiveSec; 
+const DECIDE_TIME = GameTimer.twentySec;
+const SAFE_START_TIME = DECIDE_TIME + GameTimer.fiveSec; 
 const GIF = "https://i.pinimg.com/originals/f2/b1/31/f2b13170c4a9b0432af961694563cdb2.gif";
 const EMOJI = "🙏";
 
 export class SikeDilemma extends GameActivity {
   done: boolean;
-  timer: TimerType;
+  timer: GameTimer;
   helper?: PlayerActivityType;
   helpee?: PlayerActivityType;
 
@@ -28,7 +26,7 @@ export class SikeDilemma extends GameActivity {
     super(NAME, location, GIF, EMOJI);
 
     this.done = false;
-    this.timer = DefaultTimer();
+    this.timer = new GameTimer();
   }
 
   override newRound() {
@@ -40,16 +38,16 @@ export class SikeDilemma extends GameActivity {
   override async vote(interaction: CommandInteraction, x: PlayerActivityType, command: string) {
     if (command.toLowerCase() === "yes" || command === "y" || command === "1") {
       x.vote = true;
-      //!await x.player.hud.sdfsdf
+      await x.player.hud.loadActivityVote(interaction);
     }
   }
 
   override async update(interaction: CommandInteraction, player: Player, command: string) {
-    if (game.timer.milliseconds <= SAFE_START_TIME) {await interaction.reply({ content: "Not enough time to commence the game.", ephemeral: true }); return;}
+    if (player.game.round.timer.getMillis <= SAFE_START_TIME) {await interaction.reply({ content: "Not enough time to commence the game.", ephemeral: true }); return;}
     if (this.done) {await interaction.reply({ content: "Game already commenced this round, please wait another round to play.", ephemeral: true }); return;}
     if (this.players.get(player.user.id)) {await interaction.reply({ content: "You are already a player in this game.", ephemeral: true }); return;}
 
-    
+
 
     if (command === COMMANDS.ACTIVITY.SUBCOMMANDS.DO.JOIN) {
       if (this.helpee) { await interaction.reply("There is already a helpee in the game"); return; }
@@ -65,9 +63,10 @@ export class SikeDilemma extends GameActivity {
 
     if (this.helpee && this.helper) {
       this.done = true;
-      //!this.gameMessage();
+      this.helpee.player.hud.loadActivity();
+      this.helper.player.hud.loadActivity();
 
-      this.timer.timeout = setTimeout(async () => {
+      this.timer.startTimer(() => {
         let resolved = false;
 
         if (this.helpee?.vote && this.helper?.vote) {
@@ -80,9 +79,9 @@ export class SikeDilemma extends GameActivity {
 
         if (resolved) return;
 
-        // [...this.region.players].forEach(async ([key, player]) => {
-        //   await player.hud.loadActivity({`<@${this.helpee?.player.user.id}> has \`${this.helpee?.player.vote.tickets}\` tickets remaining.`})
-        // });
+        this.region.players.forEach((player, id) => {
+          player.hud.loadActivity({`<@${this.helpee?.player.user.id}> has \`${this.helpee?.player.vote.tickets}\` tickets remaining.`})
+        });
 
       }, DECIDE_TIME);
     }

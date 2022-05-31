@@ -1,8 +1,8 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { game } from '..';
+import { GameStateType } from '../game';
 import { COMMANDS } from '../lib/commands';
-import { GameStateType } from '../lib/types';
  
 export default {
 

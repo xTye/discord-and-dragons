@@ -1,16 +1,21 @@
 import { ButtonBuilder, EmbedBuilder, ActionRowBuilder, MessageActionRowComponentBuilder, ButtonStyle, Snowflake, APISelectMenuOption, SelectMenuBuilder, APIEmbedField } from "discord.js";
 
-export class UI {
+export class GameUI {
   id: Snowflake;
   embed: EmbedBuilder;
   actionrows: ActionRowBuilder<MessageActionRowComponentBuilder>[];
-  
 
   constructor(id: Snowflake) {
     this.id = id;
     this.embed = new EmbedBuilder();
     this.actionrows = [];
   }
+
+  init() {}
+
+  load(command?: string) {}
+
+  timers() {}
 
   setActionRow(at: number, ...components: MessageActionRowComponentBuilder[]) {
     if (this.actionrows[at])
@@ -99,8 +104,4 @@ export class UI {
       inline: false,
     };
   }
-
-  init() {}
-
-  load(command?: string) {}
 }

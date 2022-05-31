@@ -98,7 +98,7 @@ export class Fish extends GameActivity {
       this.tickets -= 1;
 
 
-      x.player.inventory.tickets += 1;
+      x.player.inventory.addTickets = 1;
 
       //!await x.player.loadAct
 

@@ -1,25 +1,29 @@
-import { APIMessageComponentEmoji, ColorResolvable, Snowflake, StageChannel } from "discord.js";
+import { APIMessageComponentEmoji, Collection, ColorResolvable, Snowflake, StageChannel } from "discord.js";
 import { GameLocation } from ".";
+import { GameTimer } from "../lib/timer";
 import { Region } from "./region";
+
+const LOST_CHANCE = 0.01;
+const MIN_TRAVEL_TIME = GameTimer.fiveSec;
 
 export class Route extends GameLocation {
   lostChance: number;
   travelTime: number;
-  regions: Map<Snowflake, Region>;
+  regions: Collection<Snowflake, Region>;
 
   constructor(
     channel: StageChannel,
-    lostChance: number,
     travelTime: number,
     picture: string,
     description: string,
     gif: string,
     color: ColorResolvable,
     emoji: APIMessageComponentEmoji,
-    regions?: Map<Snowflake, Region>) {
+    regions?: Collection<Snowflake, Region>,
+    lostChance?: number) {
     super(channel, picture, description, gif, color, emoji);
     
-    this.lostChance = lostChance;
+    this.lostChance = lostChance ? lostChance : LOST_CHANCE;
     this.travelTime = travelTime;
 
     if (regions) {
@@ -33,8 +37,13 @@ export class Route extends GameLocation {
       });
     }
     else {
-      this.regions = new Map<Snowflake, Region>();
+      this.regions = new Collection<Snowflake, Region>();
     }
+  }
+
+  getTravelTime(mult: number) {
+    const time = this.travelTime - Math.round(this.travelTime * mult);
+    return time > MIN_TRAVEL_TIME ? time : MIN_TRAVEL_TIME;
   }
 
   addRegion(region: Region) {

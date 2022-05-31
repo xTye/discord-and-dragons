@@ -1,20 +1,22 @@
 import { ButtonStyle, Snowflake } from "discord.js";
-import { UI } from ".";
+import { GameUI } from ".";
 import { game } from "../..";
+import { Game } from "../../game";
 import { COMMANDS } from "../../lib/commands";
-import { REGION_NUM } from "../../lib/conts";
 import { Region } from "../../locations/region";
 
 enum Row { navigate = 0 }
 enum Buttons { prev = 0, go, next, back }
 
-export class MapUI extends UI {
+export class MapUI extends GameUI {
+  game: Game;
   region?: Region;
   page: number;
 
-  constructor(id: Snowflake) {
+  constructor(id: Snowflake, game: Game) {
     super(id);
-    this.page = Math.floor(Math.random() * REGION_NUM);
+    this.game = game;
+    this.page = Math.floor(Math.random() * this.game.regions.size);
     this.setRegion();
 
     if (this.region) {
@@ -44,9 +46,9 @@ export class MapUI extends UI {
   }
 
   handlePage(command: string) {
-    if (command === COMMANDS.MAP.SUBCOMMANDS.DEFAULT.NAME) this.page = Math.floor(Math.random() * REGION_NUM);
-    else if (command === COMMANDS.MAP.SUBCOMMANDS.NEXT.NAME) this.page = (this.page + 1) % REGION_NUM;
-    else this.page = (this.page - 1) % REGION_NUM;
+    if (command === COMMANDS.MAP.SUBCOMMANDS.DEFAULT.NAME) this.page = Math.floor(Math.random() * this.game.regions.size);
+    else if (command === COMMANDS.MAP.SUBCOMMANDS.NEXT.NAME) this.page = (this.page + 1) % this.game.regions.size;
+    else this.page = (this.page - 1) % this.game.regions.size;
   }
 
   setRegion() {

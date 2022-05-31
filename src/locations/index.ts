@@ -1,10 +1,12 @@
 import { SelectMenuOptionBuilder } from "@discordjs/builders";
-import { APIEmbedField, APIMessageComponentEmoji, ColorResolvable, EmojiResolvable, Snowflake, StageChannel } from "discord.js";
+import { APIEmbedField, APIMessageComponentEmoji, Collection, ColorResolvable, EmojiResolvable, Snowflake, StageChannel } from "discord.js";
 import { game } from "..";
 import { GameActivity } from "../activities";
+import { Game } from "../game";
 import { Player } from "../player";
 
 export class GameLocation {
+  game: Game;
   selection: SelectMenuOptionBuilder;
   channel: StageChannel;
   description: string;
@@ -12,11 +14,12 @@ export class GameLocation {
   gif: string;
   color: ColorResolvable;
   emoji: APIMessageComponentEmoji;
-  players: Map<Snowflake, Player>;
-  playersFields: Map<Snowflake, APIEmbedField>;
+  players: Collection<Snowflake, Player>;
+  playersFields: Collection<Snowflake, APIEmbedField>;
   activity?: GameActivity;
 
   constructor(
+    game: Game,
     channel: StageChannel,
     picture: string,
     description: string,
@@ -24,8 +27,8 @@ export class GameLocation {
     color: ColorResolvable,
     emoji: APIMessageComponentEmoji) {
       this.channel = channel;
-      this.players = new Map<Snowflake, Player>();
-      this.playersFields = new Map<Snowflake, APIEmbedField>();
+      this.players = new Collection<Snowflake, Player>();
+      this.playersFields = new Collection<Snowflake, APIEmbedField>();
       this.description = description;
       this.picture = picture;
       this.gif = gif;
@@ -53,19 +56,23 @@ export class GameLocation {
     this.players.set(player.user.id, player);
     this.playersFields.set(player.user.id, player.field);
 
-    [...game.players].forEach(async ([id, otherPlayer]) => {
-      if (otherPlayer != player)
-        await otherPlayer.hud.playerReadyChangeEvent();
-    });
+    if (!player.game.round.loading) {
+      game.players.forEach((otherPlayer, id) => {
+        if (otherPlayer != player)
+          otherPlayer.hud.loadPlayerJoinedRegion();
+      });
+    }
   }
 
   playerLeft(player: Player) {
     this.players.delete(player.user.id);
     this.playersFields.delete(player.user.id);
 
-    [...game.players].forEach(async ([id, otherPlayer]) => {
-      if (otherPlayer != player)
-        await otherPlayer.hud.playerReadyChangeEvent();
-    });
+    if (!player.game.round.loading) {
+      game.players.forEach((otherPlayer, id) => {
+        if (otherPlayer != player)
+          otherPlayer.hud.loadPlayerJoinedRegion();
+      });
+    }
   }
 }

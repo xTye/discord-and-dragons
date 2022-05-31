@@ -1,14 +1,13 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
-import { game } from '..';
+import { Game } from '../game';
 import { COMMANDS } from '../lib/commands';
-import { GameStateType } from '../lib/types';
 import { Region } from '../locations/region';
  
-export function generateTravelChoices() {
+export function generateTravelChoices(game: Game) {
   let choices: { name: string, value: string }[] = [];
 
-  [...game.regions].forEach(([id, region]) => {
+  game.regions.forEach((region, id) => {
     choices.push({ name: region.channel.name, value: id });
   });
 
