@@ -65,7 +65,7 @@ export class Game {
 
     if (this.round instanceof VoteRound) {
       this.players.forEach((player, id) => {
-        player.hud.loadVote();
+        player.hud.loadVoteUpdate();
       });
     }
   }
@@ -79,9 +79,9 @@ export class Game {
   }
 
   newRound() {
-    if (this.players.size <= ) {
-      this.players.forEach((player, id) => {
-        player.hud.loadEndResults();
+    if (this.players.size <= MIN_PLAYERS_LEFT) {
+      this.players.forEach(async (player, id) => {
+        await player.hud.loadGameResults();
       });
       return;
     }

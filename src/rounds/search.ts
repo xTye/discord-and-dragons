@@ -19,7 +19,7 @@ export class SearchRound extends GameRound {
     });
 
     this.game.players.forEach((player, id) => {
-      player.hud.loadSearch();
+      player.hud.loadSearchStart();
     });
     this.loading = false;
   }

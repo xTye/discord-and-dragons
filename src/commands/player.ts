@@ -69,6 +69,7 @@ export default {
 				.setChoices(
 					{ name: COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN, value: COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN },
 					{ name: COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK, value: COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK },
+					{ name: COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE, value: COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE },
 					{ name: COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_YES, value: COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_YES },
 					{ name: COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_NO, value: COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_NO },
 				)
@@ -147,7 +148,7 @@ export default {
 			else {
 				if (!(game.round instanceof SearchRound)) {await interaction.reply({ content: "Game not in search phase.", ephemeral: true }); return;}
 				if (player.travel.traveling) {await interaction.reply({ content: "You cannot travel while currently traveling.", ephemeral: true }); return;}
-				if (player.activity) {await interaction.reply({ content: "You cannot travel while in an activity.", ephemeral: true }); return;}
+				if (player.active) {await interaction.reply({ content: "You cannot travel while in an activity.", ephemeral: true }); return;}
 	
 				if (!select) {
 					const dest = player.travel.destination;
@@ -197,13 +198,16 @@ export default {
 				if (!select) {await interaction.reply({ content: "Not a valid command.", ephemeral: true }); return;}
 
 				if (select === COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN 
-					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK) {
+					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK
+					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE) {
 					if (!player.location.activity) {await interaction.reply({ content: "No valid activity at this location.", ephemeral: true }); return;}
 					player.location.activity.update(interaction, player, select);
 				} else if (select === COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_YES
 					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_NO) {
-					if (!player.activity) {await interaction.reply({ content: "Not currently apart of an activity.", ephemeral: true }); return;}
-					player.activity.activity.vote(interaction, player.activity.x, select);
+					if (!player.active) {await interaction.reply({ content: "Not currently apart of an activity.", ephemeral: true }); return;}
+					player.active.activity.vote(interaction, player, select);
+				} else {
+					player.hud.loadActivity(interaction);
 				}
 			}
 		}

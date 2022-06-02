@@ -1,8 +1,9 @@
-import { GameActivity, PlayerActivityType } from ".";
+import { GameActivity } from ".";
 import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { SilenceScroll } from "../items/scrolls/silence"
 import { CommandInteraction } from "discord.js";
+import { Player } from "../player";
 
 const HOWTO_JOIN = "You can join the activity here by idling in the room, with a random chance that you may be selected to participate.";
 const HOWTO_PLAY = `You have twenty seconds to vote.\n
@@ -22,8 +23,8 @@ export class PrisonersDilemma extends GameActivity {
   popChance: number;
   done: boolean;
   timer: GameTimer;
-  prisoner420?: PlayerActivityType;
-  prisoner69?: PlayerActivityType;
+  prisoner420?: Player;
+  prisoner69?: Player;
 
   constructor(location: GameLocation) {
     super(NAME, location, GIF, EMOJI);
@@ -33,10 +34,11 @@ export class PrisonersDilemma extends GameActivity {
     this.timer = new GameTimer();
   }
 
-  override async vote(interaction: CommandInteraction, x: PlayerActivityType, command: string) {
+  override async vote(interaction: CommandInteraction, player: Player, command: string) {
+    if (!player.active) {await interaction.reply({ content: "Not currently apart of an activity.", ephemeral: true }); return;}
     if (command.toLowerCase() === "yes" || command === "y" || command === "1")
-      x.vote = true;
-    await x.player.hud.loadActivity(interaction);
+      player.active.vote = true;
+    await player.hud.loadActivityUpdate(interaction);
   }
 
   /**
@@ -61,8 +63,8 @@ export class PrisonersDilemma extends GameActivity {
       this.prisoner420 = this.join(locPlayers.slice(Math.floor(Math.random() * locPlayers.length), 1)[0]);
       this.prisoner69 = this.join(locPlayers.slice(Math.floor(Math.random() * locPlayers.length), 1)[0]);
 
-      this.prisoner420.player.hud.loadActivity();
-      this.prisoner69.player.hud.loadActivity();
+      this.prisoner420.hud.loadActivityStart();
+      this.prisoner69.hud.loadActivityStart();
   
       this.startMiniGameTimer();
   
@@ -74,26 +76,26 @@ export class PrisonersDilemma extends GameActivity {
       if (this.prisoner420 && this.prisoner69) {
         let resolved = false;
 
-        this.prisoner420.player.setActivity();
-        this.prisoner69.player.setActivity();
-
         if (this.prisoner420.vote && this.prisoner69.vote) {
-          this.location.game.mutedPlayers.set(this.prisoner420.player.user.id, this.prisoner420.player);
-          this.location.game.mutedPlayers.set(this.prisoner69.player.user.id, this.prisoner69.player);
-          this.prisoner420.player.hud.loadActivity();
-          this.prisoner69.player.hud.loadActivity();
+          this.location.game.mutedPlayers.set(this.prisoner420.user.id, this.prisoner420);
+          this.location.game.mutedPlayers.set(this.prisoner69.user.id, this.prisoner69);
+          this.prisoner420.hud.loadActivityEnd();
+          this.prisoner69.hud.loadActivityEnd();
           resolved = true;
         }
         else if (this.prisoner420.vote) {
-          this.prisoner420.player.inventory.addItem(new SilenceScroll(this.prisoner420.player));
-          this.prisoner420.player.hud.loadActivity();
+          this.prisoner420.inventory.addItem(new SilenceScroll(this.prisoner420.player));
+          this.prisoner420.hud.loadActivityEnd();
           resolved = true;
         }
         else if (this.prisoner69.vote) {
-          this.prisoner69.player.inventory.addItem(new SilenceScroll(this.prisoner420.player));
-          this.prisoner69.player.hud.loadActivity();
+          this.prisoner69.inventory.addItem(new SilenceScroll(this.prisoner420.player));
+          this.prisoner69.hud.loadActivityEnd();
           resolved = true;
         }
+
+        this.leave(this.prisoner420);
+        this.leave(this.prisoner69);
 
         if (resolved) return;
 
@@ -101,22 +103,19 @@ export class PrisonersDilemma extends GameActivity {
         const player = locPlayers[Math.floor(Math.random() * locPlayers.length)];
         if (!player) {console.log("Internal server error, maybe someone left?"); return;}
         player.inventory.addItem(new SilenceScroll(player));
-        await player.hud.loadActivity();
+        await player.hud.loadActivityEnd();
 
       } else {
-
-        if (this.prisoner420 && !this.prisoner69) {
-          this.prisoner420.player.setActivity();
-        } else if (!this.prisoner420 && this.prisoner69) {
-          this.prisoner69.player.setActivity();
+        if (this.prisoner420) {
+          this.leave(this.prisoner420);
+          this.prisoner420.hud.loadActivityError();
+        } else if (this.prisoner69) {
+          this.leave(this.prisoner69);
+          this.prisoner69.hud.loadActivityError();
         }
-
+        
         this.newRound();
-
       }
-      
-      this.prisoner420 = undefined;
-      this.prisoner69 = undefined;
 
     }, DECIDE_TIME);
   }

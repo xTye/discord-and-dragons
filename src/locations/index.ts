@@ -43,15 +43,13 @@ export class GameLocation {
         .setEmoji(emoji);
   }
 
-  findPath(dest: GameLocation) {}
-
   addActivity(activity: GameActivity) {
     this.activity = activity;
   }
 
-  async arrivedMessage(player: Player) {}
-
-  newRound() {}
+  newRound() {
+    this.activity?.newRound();
+  }
 
   playerJoined(player: Player) {
     this.players.set(player.user.id, player);
@@ -60,7 +58,7 @@ export class GameLocation {
     if (!player.game.round.loading) {
       game.players.forEach((otherPlayer, id) => {
         if (otherPlayer != player)
-          otherPlayer.hud.loadPlayerJoinedRegion();
+          otherPlayer.hud.loadRegionUpdate();
       });
     }
   }
@@ -72,7 +70,7 @@ export class GameLocation {
     if (!player.game.round.loading) {
       game.players.forEach((otherPlayer, id) => {
         if (otherPlayer != player)
-          otherPlayer.hud.loadPlayerJoinedRegion();
+          otherPlayer.hud.loadRegionUpdate();
       });
     }
   }

@@ -59,7 +59,7 @@ export class VoteRound extends GameRound {
   
     vote.numVotes += player.vote.tickets;
     
-    player.hud.loadVoted();
+    player.hud.loadVoteVoted();
   }
 
   initPlayer(player: Player) {
@@ -81,7 +81,7 @@ export class VoteRound extends GameRound {
     });
 
     this.game.players.forEach((player, id) => {
-      player.hud.loadVote();
+      player.hud.loadVoteStart();
     });
     this.loading = false;
   }
@@ -106,7 +106,7 @@ export class VoteRound extends GameRound {
         console.log("It was a tie");
 
         this.game.players.forEach((player, id) => {
-          player.hud.loadTie();
+          player.hud.loadVoteTie();
         });
 
         //# Try again

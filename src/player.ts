@@ -2,7 +2,7 @@ import { APIEmbedField, APIMessageComponentEmoji, APISelectMenuOption, Collectio
 import { PLAYER_ROLE_ID } from "./lib/conts";
 import { Game } from "./game";
 import { GameLocation } from "./locations";
-import { GameActivity, PlayerActivityType } from "./activities";
+import { GameActivity } from "./activities";
 import { GameHUD } from "./hud";
 import { GameTimer } from "./lib/timer";
 import { ConnectedRegion } from "./locations/region";
@@ -43,7 +43,7 @@ class Inventory {
     this.select = item;
 
     if (item)
-      this.player.hud.loadSelectItem();
+      this.player.hud.loadItemSelect();
   }
 
   addItem(newItem: GameItem, quantity?: number) {
@@ -64,7 +64,7 @@ class Inventory {
     if (item.quantity <= 0)
       this.items.delete(item.name);
 
-    this.player.hud.loadConsumeItem();
+    this.player.hud.loadItemConsume();
   }
 
   refundTickets() {
@@ -103,10 +103,6 @@ export class Player {
   location: GameLocation;
   ready: boolean;
   hud: GameHUD;
-  activity?: {
-    activity: GameActivity;
-    x: PlayerActivityType;
-  };
   inventory: Inventory;
   stats: {
     travelMult: number;
@@ -121,6 +117,11 @@ export class Player {
   vote: {
     player?: Player;
     tickets?: number;
+  };
+  active?: {
+    activity: GameActivity;
+    timer?: GameTimer;
+    vote?: boolean;
   };
 
   constructor(
@@ -174,7 +175,7 @@ export class Player {
     else
       this.game.readyQueue.pop();
 
-    this.hud.loadReadyUp(interaction);
+    this.hud.loadGameReady(interaction);
   }
 
   setDescription(description: string) {
@@ -224,8 +225,8 @@ export class Player {
     return true;
   }
 
-  setActivity(activity?: {activity: GameActivity, x: PlayerActivityType}) {
-    this.activity = activity;
+  setActivity(active?: { activity: GameActivity, timer?: GameTimer, vote?: boolean }) {
+    this.active = active;
   }
 
 //# =========================================
@@ -278,7 +279,7 @@ export class Player {
 
   voteStart(dest: GameLocation, round: VoteRound) {
     this.travel.timer.stopTimer();
-    if (this.activity) this.activity.activity.leave(this.activity.x);
+    if (this.active) this.active.activity.leave(this);
 
 
     if (this.game.mutedPlayers.get(this.user.id) && this.stats.muted)
@@ -313,7 +314,7 @@ export class Player {
         await this.user.voice.setSuppressed(false);
     }
 
-    this.hud.loadVoteResults();
+    this.hud.loadVoteEnd();
   }
 
   async lastWords() {

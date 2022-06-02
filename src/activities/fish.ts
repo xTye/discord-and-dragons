@@ -1,5 +1,5 @@
 import { CommandInteraction } from "discord.js";
-import { GameActivity, PlayerActivityType } from ".";
+import { GameActivity } from ".";
 import { COMMANDS } from "../lib/commands";
 import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
@@ -45,6 +45,9 @@ export class Fish extends GameActivity {
       this.fish(interaction, this.join(player));
     } else if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK) {
       this.rock(interaction, this.join(player));
+    } else if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE) {
+      this.leave(player);
+      player.hud.loadActivity(interaction);
     } else {
       await interaction.reply({ content: "Not a valid command at this location.", ephemeral: true });
     }
@@ -53,21 +56,24 @@ export class Fish extends GameActivity {
 
 
 
-  private fish(interaction: CommandInteraction, x: PlayerActivityType) {
-    x.player.hud.loadActivity(interaction);
-    
-    x.timer.startTimer(() => {
+  private fish(interaction: CommandInteraction, player: Player) {
+    const timer = new GameTimer(FISH_TIME);
+    this.join(player, { timer });
+
+    player.hud.loadActivityStart(interaction);
+
+    timer.startTimer(() => {
       if (this.tickets === 0 || Math.random() > this.chance + this.chanceModifier) { 
         this.chanceModifier += 0.01;
       } else {
         this.chanceModifier = 0;
         this.tickets -= 1;
-        x.player.inventory.addTickets = 1;
+        player.inventory.addTickets = 1;
       }
 
-      x.player.hud.loadActivityDone();
+      player.hud.loadActivityDone();
 
-      this.leave(x);
+      this.leave(player);
     }, FISH_TIME);
   }
 
@@ -75,7 +81,10 @@ export class Fish extends GameActivity {
 
 
 
-  private rock(interaction: CommandInteraction, x: PlayerActivityType) {
+  private rock(interaction: CommandInteraction, player: Player) {
+    const timer = new GameTimer(ROCK_TIME);
+    this.join(player, { timer });
+    
     let curModifier: number = 0;
   
     if (this.chance - CATCH_CHANCE >= 0) this.chance -= CATCH_CHANCE;
@@ -84,19 +93,21 @@ export class Fish extends GameActivity {
       else { curModifier = this.chanceModifier; this.chanceModifier -= curModifier; }
     }
 
-    x.player.hud.loadActivity(interaction);
-    this.location.players.forEach((player, id) => {
-      x.player.hud.loadActivity();
+    player.hud.loadActivityStart(interaction);
+
+    this.location.players.forEach((otherPlayer, id) => {
+      if (player != otherPlayer)
+        otherPlayer.hud.loadActivityNotify();
     });
 
 
-    x.timer.startTimer(() => {
+    timer.startTimer(() => {
       this.chanceModifier += curModifier;
       this.chance += CATCH_CHANCE;
 
-      x.player.hud.loadActivityDone();
+      player.hud.loadActivityDone();
 
-      this.leave(x);
+      this.leave(player);
     }, ROCK_TIME);
   }
 }

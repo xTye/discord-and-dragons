@@ -1,7 +1,8 @@
 import { CommandInteraction } from "discord.js";
-import { GameActivity, PlayerActivityType } from ".";
+import { GameActivity } from ".";
 import { DetectTicketsScroll } from "../items/scrolls/detect-tickets";
 import { COMMANDS } from "../lib/commands";
+import { PLAYER_ROLE_ID } from "../lib/conts";
 import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
@@ -20,8 +21,8 @@ const EMOJI = "🙏";
 export class SikeDilemma extends GameActivity {
   done: boolean;
   timer: GameTimer;
-  helper?: PlayerActivityType;
-  helpee?: PlayerActivityType;
+  helper?: Player;
+  helpee?: Player;
 
   constructor (location: GameLocation) {
     super(NAME, location, GIF, EMOJI);
@@ -40,52 +41,67 @@ export class SikeDilemma extends GameActivity {
     if (command.toLowerCase() === "yes" || command === "y" || command === "1")
       x.vote = true;
     
-      await x.player.hud.loadActivity(interaction);
+      await x.player.hud.loadActivityUpdate(interaction);
   }
 
   override async update(interaction: CommandInteraction, player: Player, command: string) {
     if (player.game.round.timer.getMillis <= SAFE_START_TIME) {await interaction.reply({ content: "Not enough time to commence the game.", ephemeral: true }); return;}
     if (this.done) {await interaction.reply({ content: "Game already commenced this round, please wait another round to play.", ephemeral: true }); return;}
+    
+
+    if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE) {
+      if (!this.players.get(player.user.id)) {await interaction.reply({ content: "You are already a player in this game.", ephemeral: true }); return;}
+      this.leave(player);
+      player.hud.loadActivity(interaction);
+    }
+    
+
     if (this.players.get(player.user.id)) {await interaction.reply({ content: "You are already a player in this game.", ephemeral: true }); return;}
-
-
-
     if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN) {
       if (this.helpee) { await interaction.reply("There is already a helpee in the game"); return; }
-      this.helpee = this.join(player);
-      this.helpee.player.hud.loadActivity();
+      this.helpee = this.join(player, { vote: false });
+      this.helpee.hud.loadActivityJoin(interaction);
     }
 
     if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK) {
       if (this.helper) { await interaction.reply("There is already a helper in the game"); return; }
-      this.helper = this.join(player);
-      this.helper.player.hud.loadActivity();
+      this.helper = this.join(player, { vote: false });
+      this.helper.hud.loadActivityJoin(interaction);
     }
 
     if (this.helpee && this.helper) {
       this.done = true;
-      this.helpee.player.hud.loadActivity();
-      this.helper.player.hud.loadActivity();
+      this.helpee.hud.loadActivityStart();
+      this.helper.hud.loadActivityStart();
 
       this.timer.startTimer(() => {
-        let resolved = false;
-
-        if (this.helpee?.vote && this.helper?.vote) {
-          this.helpee.player.inventory.addItem(new DetectTicketsScroll(this.helpee.player));
-          this.helpee.player.hud.loadActivity();
-          resolved = true;
+        if (this.helpee && this.helper) {
+          let resolved = false;
+  
+          if (this.helpee?.vote && this.helper?.vote) {
+            this.helpee.inventory.addItem(new DetectTicketsScroll(this.helpee.player));
+            this.helpee.hud.loadActivityEnd();
+            resolved = true;
+          }
+  
+          this.leave(this.helpee);
+          this.leave(this.helper);
+  
+          if (resolved) return;
+  
+          this.location.players.forEach((otherPlayer, id) => {
+            if (otherPlayer != this.helpee)
+              otherPlayer.hud.loadActivityNotify();
+          });
+        } else {
+          if (this.helpee) {
+            this.leave(this.helpee);
+            this.helpee.hud.loadActivityError();
+          } else if (this.helper) {
+            this.leave(this.helper);
+            this.helper.hud.loadActivityError();
+          }
         }
-
-        this.leave(this.helpee);
-        this.leave(this.helper);
-
-        if (resolved) return;
-
-        this.location.players.forEach((player, id) => {
-          //! Reveal player tickets.
-          if (player != this.helpee?.player)
-            player.hud.loadActivity();
-        });
 
       }, DECIDE_TIME);
     }

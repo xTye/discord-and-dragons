@@ -63,6 +63,7 @@ export const COMMANDS = {
         DESCRIPTION: "Select a command",
         JOIN: "join",
         ROCK: "rock",
+        LEAVE: "leave",
         VOTE_YES: "vote_yes",
         VOTE_NO: "vote_no",
       },
