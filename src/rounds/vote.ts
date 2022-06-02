@@ -59,7 +59,7 @@ export class VoteRound extends GameRound {
   
     vote.numVotes += player.vote.tickets;
     
-    player.hud.loadVoteVoted();
+    await player.hud.loadRoundUpdate();
   }
 
   initPlayer(player: Player) {
@@ -71,7 +71,7 @@ export class VoteRound extends GameRound {
     }
   }
 
-  protected override init() {
+  protected override async init() {
     console.log("Entering voting round.");
     this.loading = true;
 
@@ -80,14 +80,14 @@ export class VoteRound extends GameRound {
       player.voteStart(this.game.locationVote ? this.game.locationVote : graph.lair.region, this);
     });
 
-    this.game.players.forEach((player, id) => {
-      player.hud.loadVoteStart();
-    });
+    for (const [id, player] of this.game.players) {
+      await player.hud.loadVoteStart();
+    };
     this.loading = false;
   }
 
-  override start() {
-    this.init();
+  override async start() {
+    await this.init();
 
     this.timer.startTimer(() => {
       this.iterator();
@@ -120,15 +120,15 @@ export class VoteRound extends GameRound {
     }
   }
 
-  private end() {
+  private async end() {
     if (this.immuneRound) {
       if (this.player) 
         this.game.immunePlayers.set(this.player.user.id, this.player);
 
       console.log(`${this.player ? this.player.name : "No one"} was choosen for immunity.`);
 
-      this.game.players.forEach((player, id) => {
-        player.voteEnd(
+      for (const [id, player] of this.game.players) {
+        await player.voteEnd(
           TICKET_INC_IMMUNE,
           this.err === ERR_CODES.MAX_TIES,
         );

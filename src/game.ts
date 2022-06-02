@@ -8,6 +8,7 @@ import { GameTimer } from "./lib/timer";
 import { GameRound } from "./rounds/index";
 import { SearchRound } from "./rounds/search";
 import { VoteRound } from "./rounds/vote";
+import { ReadyRound } from "./rounds/ready";
 import { game } from ".";
 
 export const MAX_PLAYERS = 8;
@@ -27,19 +28,17 @@ export class Game {
   players: Collection<Snowflake, Player>;
   mutedPlayers: Collection<Snowflake, Player>;
   immunePlayers: Collection<Snowflake, Player>;
-  readyQueue: boolean[];
 
   constructor() {
     this.timer = new GameTimer();
     this.started = false;
-    this.round = new SearchRound(this);
+    this.round = new ReadyRound(this);
     this.rounds = 0;
     this.regions = new Collection<Snowflake, Region>();
     this.routes = new Collection<Snowflake, Route>();
     this.players = new Collection<Snowflake, Player>();
     this.mutedPlayers = new Collection<Snowflake, Player>();
     this.immunePlayers = new Collection<Snowflake, Player>();
-    this.readyQueue = [];
   }
 
   addRegion(region: Region, locationStart?: GameLocation, locationVote?: GameLocation) {
@@ -64,9 +63,9 @@ export class Game {
       await player.channel.delete();
 
     if (this.round instanceof VoteRound) {
-      this.players.forEach((player, id) => {
+      for (const [id, player] of this.players) {
         player.hud.loadVoteUpdate();
-      });
+      }
     }
   }
 
@@ -75,14 +74,16 @@ export class Game {
       player.field.name = "___";
     });
 
+    this.round = new SearchRound(this);
+
     this.newRound();
   }
 
-  newRound() {
+  async newRound() {
     if (this.players.size <= MIN_PLAYERS_LEFT) {
-      this.players.forEach(async (player, id) => {
+      for (const [id, player] of this.players) {
         await player.hud.loadGameResults();
-      });
+      };
       return;
     }
 
@@ -96,7 +97,7 @@ export class Game {
       this.round = new VoteRound(game, true);
     }
 
-    this.round.start();
+    await this.round.start();
     this.round.started = true;
   }
 

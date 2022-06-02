@@ -10,22 +10,23 @@ export class SearchRound extends GameRound {
     super(game, time ? time : SEARCH_TIME);
   }
 
-  protected override init() {
+  protected override async init() {
     console.log("Entering search round.");
     this.loading = true;
 
-    this.game.regions.forEach((region, id) => {
+    for (const [id, region] of this.game.regions) {
       region.newRound();
-    });
+    };
 
-    this.game.players.forEach((player, id) => {
-      player.hud.loadSearchStart();
-    });
+    for (const [id, player] of this.game.players) {
+      await player.hud.loadRoundStart();
+    };
+    
     this.loading = false;
   }
 
-  override start() {
-    this.init();
+  override async start() {
+    await this.init();
     this.timer.startTimer(() => this.game.newRound(), SEARCH_TIME);
   }
 }

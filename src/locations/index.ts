@@ -56,10 +56,10 @@ export class GameLocation {
     this.playersFields.set(player.user.id, player.field);
 
     if (!player.game.round.loading) {
-      game.players.forEach((otherPlayer, id) => {
+      for (const [id, otherPlayer] of this.players) {
         if (otherPlayer != player)
           otherPlayer.hud.loadRegionUpdate();
-      });
+      };
     }
   }
 
@@ -68,10 +68,10 @@ export class GameLocation {
     this.playersFields.delete(player.user.id);
 
     if (!player.game.round.loading) {
-      game.players.forEach((otherPlayer, id) => {
+      for (const [id, otherPlayer] of this.players) {
         if (otherPlayer != player)
           otherPlayer.hud.loadRegionUpdate();
-      });
+      };
     }
   }
 }

@@ -1,6 +1,8 @@
 import { ButtonBuilder, EmbedBuilder, ActionRowBuilder, MessageActionRowComponentBuilder, ButtonStyle, Snowflake, APISelectMenuOption, SelectMenuBuilder, APIEmbedField } from "discord.js";
+import { Player } from "../../player";
 
 export class GameUI {
+  player?: Player;
   id: Snowflake;
   embed: EmbedBuilder;
   actionrows: ActionRowBuilder<MessageActionRowComponentBuilder>[];
@@ -11,11 +13,28 @@ export class GameUI {
     this.actionrows = [];
   }
 
+  loadTimers() {
+    if (this.player && this.player.game.started) {
+      let timers = `Round: ${this.player.game.timer.string}`;
+
+      if (this.player.travel.traveling)
+      timers += ` | Travel: ${this.player.travel.timer.string}`;
+
+      if (this.player.active) {
+        if (this.player.active.activity.timer)
+        timers += ` | Activity: ${this.player.active.activity.timer}`;
+        else
+        timers += ` | Activity: ${this.player.active.timer}`;
+      }
+
+      this.embed.setFooter({
+        text: timers,
+        iconURL: this.player.location.picture
+      });
+    }
+  }
+
   init() {}
-
-  load(command?: string) {}
-
-  timers() {}
 
   setActionRow(at: number, ...components: MessageActionRowComponentBuilder[]) {
     if (this.actionrows[at])

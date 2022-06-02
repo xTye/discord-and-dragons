@@ -1,10 +1,11 @@
-import { ActionRowBuilder, APIMessageComponentEmoji, Collection, CommandInteraction, EmbedBuilder, MessageActionRowComponentBuilder, Snowflake } from "discord.js";
+import { ActionRowBuilder, APIMessageComponentEmoji, Collection, CommandInteraction, MessageActionRowComponentBuilder, Snowflake } from "discord.js";
 import { GameTimer } from "../lib/timer";
 import { GameLocation } from "../locations";
 import { Player } from "../player";
 
 export class GameActivity {
   name: string;
+  timer?: GameTimer;
   location: GameLocation;
   gif: string;
   emoji: APIMessageComponentEmoji | string;
@@ -26,12 +27,12 @@ export class GameActivity {
     this.players.clear();
   }
 
-  async update(interaction: CommandInteraction, player: Player, command?: string) {
-    await interaction.reply({ content: "Cannot voluntarily interact with an activity at this location.", ephemeral: true });
+  async update(player: Player, command?: string) {
+    await player.hud.loadActivityError();
   }
 
-  async vote(interaction: CommandInteraction, player: Player, command?: string) {
-    await interaction.reply({ content: "There is no vote at this location.", ephemeral: true });
+  async vote(player: Player, command?: string) {
+    await player.hud.loadActivityError();
   }
 
   protected join(player: Player, options?: { timer?: GameTimer , vote?: boolean}) {

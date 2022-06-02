@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction } from 'discord.js';
 import { COMMANDS } from '../lib/commands';
-import { GameStateType } from '../lib/types';
 import { game } from '..';
  
 export default {
@@ -11,7 +10,7 @@ export default {
 
 	, async execute(interaction: CommandInteraction) {
 
-    if (game.state !== GameStateType.READY) {await interaction.reply({ content: "Game has already started.", ephemeral: true });return;}
+    if (game.started) {await interaction.reply({ content: "Game has already started.", ephemeral: true });return;}
   
     const user = interaction.guild?.members.cache.get(interaction.user.id);
     if (!user) return;

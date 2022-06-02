@@ -66,6 +66,7 @@ export const COMMANDS = {
         LEAVE: "leave",
         VOTE_YES: "vote_yes",
         VOTE_NO: "vote_no",
+        VOTE_LOAD: "vote_load",
       },
     },
   },

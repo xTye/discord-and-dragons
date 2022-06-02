@@ -24,7 +24,7 @@ export const COLOSSEUM = "https://i.imgur.com/WZT2IWK.jpg";
 export const COLOSSEUM_EMBED = "https://cdn.discordapp.com/attachments/967515407441346683/968675120040271892/1df4cdb8f6f57eb073015a21557c5cbd.gif";
 export const MAP = "https://i.imgur.com/5wpzveP.jpg";
 export const HELP_GIF = "https://i.pinimg.com/originals/0c/94/82/0c94826837dfe2747f01ccd11d6c8a48.gif"
-
+export const TICKET_EMOJI = { id: "981815976838447115", name: "ticket", animated: true };
 
 
 

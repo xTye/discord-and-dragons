@@ -39,7 +39,7 @@ class Inventory {
     return this.items.get(name);
   }
 
-  setItem(item?: GameItem) {
+  async setItem(item?: GameItem) {
     this.select = item;
 
     if (item)
@@ -56,7 +56,7 @@ class Inventory {
     }
   }
 
-  consumeItem(interaction: CommandInteraction, item: GameItem) {
+  async consumeItem(interaction: CommandInteraction, item: GameItem) {
     const usedItem = item.use(interaction);
     if (!usedItem) return;
 
@@ -64,7 +64,10 @@ class Inventory {
     if (item.quantity <= 0)
       this.items.delete(item.name);
 
-    this.player.hud.loadItemConsume();
+    if (interaction.replied)
+      await this.player.hud.loadItemConsume();
+    else
+      await this.player.hud.loadItemConsume(interaction);
   }
 
   refundTickets() {
@@ -166,7 +169,7 @@ export class Player {
     this.location.playerJoined(this);
   }
 
-  readyUp(interaction: CommandInteraction) {
+  async readyUp(interaction: CommandInteraction) {
     this.ready = !this.ready;
     this.field.name = this.ready ? "Ready" : "Not Ready";
 
@@ -175,27 +178,28 @@ export class Player {
     else
       this.game.readyQueue.pop();
 
-    this.hud.loadGameReady(interaction);
+    await this.hud.loadReady(interaction);
   }
 
   setDescription(description: string) {
     const cut = description.length > 46 ? `${description.substring(0, 46)}..` : description;
     this.description = cut;
     this.selection.description = cut;
-    this.location.players.forEach((player, id) => {
-      player.hud.loadDescriptionChange();
-    });
+
+    for (const [id, player] of this.game.players) {
+      player.hud.loadSetDescription();
+    }
   }
 
-  async kill(interaction?: CommandInteraction) {
+  async kill() {
     await this.game.removePlayer(this);
     await this.user.roles.remove(PLAYER_ROLE_ID);
     await this.user.voice.setSuppressed(true);
-    this.hud.loadKill(interaction);
+    await this.hud.loadPlayerKill();
   }
 
   syncMessage(interaction: CommandInteraction) {
-    this.hud.loadPlayerUI(interaction);
+    this.hud.renderPlayerUI(interaction);
   }
 
   syncVoice() {
@@ -277,7 +281,7 @@ export class Player {
     this.vote.tickets = tickets;
   }
 
-  voteStart(dest: GameLocation, round: VoteRound) {
+  async voteStart(dest: GameLocation, round: VoteRound) {
     this.travel.timer.stopTimer();
     if (this.active) this.active.activity.leave(this);
 
@@ -287,7 +291,7 @@ export class Player {
 
 
     this.location.playerLeft(this);
-    if (!this.move(dest.channel.id)) {this.kill(); return;}
+    if (!await this.move(dest.channel.id)) {this.kill(); return;}
     this.location = dest;
     this.location.playerJoined(this);
 
@@ -314,7 +318,7 @@ export class Player {
         await this.user.voice.setSuppressed(false);
     }
 
-    this.hud.loadVoteEnd();
+    await this.hud.loadRoundEnd();
   }
 
   async lastWords() {

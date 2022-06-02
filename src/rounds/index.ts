@@ -19,7 +19,7 @@ export class GameRound {
 
   protected init() {}
 
-  start() {
+  async start() {
     this.timer.startTimer(() => {}, this.time);
   }
 

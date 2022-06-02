@@ -90,14 +90,18 @@ export default {
 					return;
 				} else if (select === COMMANDS.PLAYER.STATE.SELECT.READY) {
 					if (player.game.started) {await interaction.reply({ content: "Game has already started.", ephemeral: true }); return;}
-					player.readyUp(interaction);
+					await player.readyUp(interaction);
 				} else if (select === COMMANDS.PLAYER.STATE.SELECT.LEAVE) {
-					player.kill(interaction);
+					await interaction.reply({ content: "Leaving game..." });
+					await player.kill();
+					await interaction.deleteReply();
 				} else if (select === COMMANDS.PLAYER.STATE.SELECT.LOAD_DESCRIPTION) {
 					if (player.game.started) {await interaction.reply({ content: "Game has already started.", ephemeral: true }); return;}
-					player.setDescription(command[3]);
+					player.hud.loadSetDescription();
 				} else if (select === COMMANDS.PLAYER.STATE.SELECT.SET_DESCRIPTION) {
-					player.hud.loadSetDescription(interaction);
+					await interaction.reply({ content: "Setting description..." });
+					player.setDescription(command[3]);
+					await interaction.deleteReply();
 				}
 			} else {
 				const user = interaction.guild?.members.cache.get(interaction.user.id);
@@ -128,11 +132,11 @@ export default {
 				if (!select) {
 					const item = player.inventory.getSelect;
 					if (!item) {await interaction.reply({ content: "Please select a valid item", ephemeral: true }); return;}
-					player.inventory.consumeItem(interaction, item);
+					await player.inventory.consumeItem(interaction, item);
 				} else {
 					const item = player.inventory.getItem(select);
 					await interaction.reply({ content: "Setting item..." });
-					player.inventory.setItem(item);
+					await player.inventory.setItem(item);
 					await interaction.deleteReply();
 				}
 			}
@@ -201,13 +205,26 @@ export default {
 					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK
 					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE) {
 					if (!player.location.activity) {await interaction.reply({ content: "No valid activity at this location.", ephemeral: true }); return;}
-					player.location.activity.update(interaction, player, select);
+					await interaction.reply({ content: "Loading Activity..." });
+					if (player.game.round.timer.getMillis <= SAFE_START_TIME) {await interaction.reply({ content: "Not enough time to commence the game.", ephemeral: true }); return;}
+					if (player.active?.activity.done) {await interaction.reply({ content: "Game already commenced this round, please wait another round to play.", ephemeral: true }); return;}	
+					await player.location.activity.update(player, select);
+					await interaction.deleteReply();
 				} else if (select === COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_YES
 					|| select === COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_NO) {
 					if (!player.active) {await interaction.reply({ content: "Not currently apart of an activity.", ephemeral: true }); return;}
-					player.active.activity.vote(interaction, player, select);
+					await interaction.reply({ content: "Loading Activity..." });
+					await player.active.activity.vote(player, select);
+					await interaction.deleteReply();
+				} else if (select === COMMANDS.PLAYER.ACTIVITY.SELECT.VOTE_LOAD) {
+					if (!player.location.activity) {await interaction.reply({ content: "No valid activity at this location.", ephemeral: true }); return;}
+					await interaction.reply({ content: "Loading Activity..." });
+					await player.hud.loadActivityModal();
+					await interaction.deleteReply();
 				} else {
-					player.hud.loadActivity(interaction);
+					await interaction.reply({ content: "Loading Activity UI..." })
+					await player.hud.loadActivityUI();
+					await interaction.deleteReply();
 				}
 			}
 		}

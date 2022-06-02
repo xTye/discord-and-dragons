@@ -23,6 +23,10 @@ export class GameTimer {
   private interval?: NodeJS.Timer;
 
   get getMillis() { return this.milliseconds; }
+  
+  get string() {
+    return `${this.minutes}:${this.seconds < 10 ? "0" + this.seconds : this.seconds}`;
+  }
 
   private set setMilliseconds(milliseconds: number) {
     this.milliseconds = milliseconds ? milliseconds : 0;

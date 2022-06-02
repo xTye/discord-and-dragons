@@ -30,13 +30,13 @@ export class Route extends GameLocation {
 
     if (regions) {
       this.regions = regions;
-      [...regions].forEach(([id, region]) => {
+      for (const [id, region] of regions) {
         region.addRoute(this);
 
-        [...regions].forEach(([travId, travRegion]) => {
+        for (const [travId, travRegion] of regions) {
           if (id != travId) region.addConnectedRegion(this, travRegion);
-        });
-      });
+        }
+      }
     }
     else {
       this.regions = new Collection<Snowflake, Region>();
@@ -50,10 +50,10 @@ export class Route extends GameLocation {
 
   addRegion(region: Region) {
     // This may not work
-    [...this.regions].forEach(([id, travRegion]) => {
+    for (const [id, travRegion] of this.regions) {
       region.addConnectedRegion(this, travRegion);
       travRegion.addConnectedRegion(this, region);
-    });
+    };
 
     this.regions.set(region.channel.id, region);
     region.addRoute(this);

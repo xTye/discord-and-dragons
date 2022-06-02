@@ -63,8 +63,8 @@ export class PrisonersDilemma extends GameActivity {
       this.prisoner420 = this.join(locPlayers.slice(Math.floor(Math.random() * locPlayers.length), 1)[0]);
       this.prisoner69 = this.join(locPlayers.slice(Math.floor(Math.random() * locPlayers.length), 1)[0]);
 
-      this.prisoner420.hud.loadActivityStart();
-      this.prisoner69.hud.loadActivityStart();
+      await this.prisoner420.hud.loadActivityStart();
+      await this.prisoner69.hud.loadActivityStart();
   
       this.startMiniGameTimer();
   
@@ -79,18 +79,18 @@ export class PrisonersDilemma extends GameActivity {
         if (this.prisoner420.vote && this.prisoner69.vote) {
           this.location.game.mutedPlayers.set(this.prisoner420.user.id, this.prisoner420);
           this.location.game.mutedPlayers.set(this.prisoner69.user.id, this.prisoner69);
-          this.prisoner420.hud.loadActivityEnd();
-          this.prisoner69.hud.loadActivityEnd();
+          await this.prisoner420.hud.loadActivityEnd();
+          await this.prisoner69.hud.loadActivityEnd();
           resolved = true;
         }
         else if (this.prisoner420.vote) {
-          this.prisoner420.inventory.addItem(new SilenceScroll(this.prisoner420.player));
-          this.prisoner420.hud.loadActivityEnd();
+          this.prisoner420.inventory.addItem(new SilenceScroll(this.prisoner420));
+          await this.prisoner420.hud.loadActivityEnd();
           resolved = true;
         }
         else if (this.prisoner69.vote) {
-          this.prisoner69.inventory.addItem(new SilenceScroll(this.prisoner420.player));
-          this.prisoner69.hud.loadActivityEnd();
+          this.prisoner69.inventory.addItem(new SilenceScroll(this.prisoner420));
+          await this.prisoner69.hud.loadActivityEnd();
           resolved = true;
         }
 
@@ -108,10 +108,10 @@ export class PrisonersDilemma extends GameActivity {
       } else {
         if (this.prisoner420) {
           this.leave(this.prisoner420);
-          this.prisoner420.hud.loadActivityError();
+          await this.prisoner420.hud.loadActivityError();
         } else if (this.prisoner69) {
           this.leave(this.prisoner69);
-          this.prisoner69.hud.loadActivityError();
+          await this.prisoner69.hud.loadActivityError();
         }
         
         this.newRound();

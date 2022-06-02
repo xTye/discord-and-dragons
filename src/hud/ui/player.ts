@@ -11,7 +11,7 @@ const KILL_MESSAGES = [
   "Better luck next time ",
   "Almost ",
   "Killer work ",
-  "This game sucked anyway ",
+  "Unlucky ",
 ];
 
 
@@ -32,13 +32,11 @@ export class PlayerUI extends GameUI {
 
   override init() {
     this.embed = new EmbedBuilder()
-      .setTitle(`Hey, ${this.player.name}`)
+      .setTitle(``)
       .setColor("#c94b68")
-      .setDescription(`Welcome to the game! Here is a list of people who are also in the lobby.`)
-      .setAuthor({ name: `Tickets: ${this.player.inventory.tickets}`, iconURL: this.player.picture})
+      .setAuthor({ name: this.player.name, iconURL: this.player.picture})
       .setThumbnail(MAP)
       .setImage(COLOSSEUM_EMBED)
-      .setFooter({ text: `Time: ${this.player.travel.timer.minutes}:${this.player.travel.timer.seconds < 10 ? "0" + this.player.travel.timer.seconds : this.player.travel.timer.seconds}`, iconURL: this.player.location.picture })
       .setTimestamp(new Date());
 
     this.addWhiteSpace();
