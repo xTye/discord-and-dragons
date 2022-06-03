@@ -11,6 +11,7 @@ import { VoteRound } from "./rounds/vote";
 import { ReadyRound } from "./rounds/ready";
 import { game } from ".";
 
+
 export const MAX_PLAYERS = 8;
 const MIN_PLAYERS_LEFT = 3;
 const MAX_ROUNDS = 2;

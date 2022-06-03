@@ -1,4 +1,3 @@
-import { CommandInteraction } from "discord.js";
 import { Game } from "../game";
 import { GameTimer } from "../lib/timer";
 

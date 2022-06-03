@@ -9,7 +9,7 @@ Immediate:
 Short Term:
 - Modals
 - Lost mechanic
-- Test role mentions with commands when priviladged
+- Test role mentions with commands when privileged
 
 Long Term:
 - Add custom map creation
