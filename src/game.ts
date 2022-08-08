@@ -16,8 +16,16 @@ export const MAX_PLAYERS = 8;
 const MIN_PLAYERS_LEFT = 3;
 const MAX_ROUNDS = 2;
 
+type GameEvent = {
+  func: () => {};
+  interaction?: CommandInteraction;
+}
+
 
 export class Game {
+  loop?: NodeJS.Timer;
+  looping: boolean;
+  events: GameEvent[];
   timer: GameTimer;
   started: boolean;
   round: GameRound;
@@ -31,6 +39,8 @@ export class Game {
   immunePlayers: Collection<Snowflake, Player>;
 
   constructor() {
+    this.looping = false;
+    this.events = [];
     this.timer = new GameTimer();
     this.started = false;
     this.round = new ReadyRound(this);
@@ -68,6 +78,42 @@ export class Game {
         player.hud.loadVoteUpdate();
       }
     }
+  }
+
+  eventloop() {
+    this.loop = setInterval(async () => {
+      if (!this.looping) {
+
+        this.looping = true;
+        const newTimers: GameTimer[] = [];
+    
+        while (!timers.empty) {
+          const timer = timers.pop();
+          timer.updateTime();
+    
+          if (timer.timeElapsed > timer.timeFinished)
+            events.push(timer.func());
+          else
+            newTimers.push(timer);
+        }
+    
+        timers = newTimers;
+    
+        while (!events.empty) {
+          const event = events.pop();
+          if (event.interaction)
+            await interaction.reply({ content: "Loading..." });
+          
+          await event.func();
+          
+          if (event.interaction)
+            await interaction.deleteReply();
+        }
+    
+        this.looping = false;
+    
+      }
+    }, 100);
   }
 
   start() {
