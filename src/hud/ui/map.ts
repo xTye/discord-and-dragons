@@ -25,21 +25,21 @@ export class MapUI extends GameUI {
         "Prev",
         ButtonStyle.Primary,
         "◀️",
-      )
+      );
 
       const nextButton = this.createButton(
         "/map page:next",
         "Next",
         ButtonStyle.Primary,
         "▶️",
-      )
+      );
 
       const cancelButton = this.createButton(
-        "/player sync",
+        "/player state select:sync_message",
         "Cancel",
         ButtonStyle.Danger,
         { name: "redcross", id: "758380151238033419" },
-      )
+      );
 
       this.addActionRow(prevButton, nextButton, cancelButton);
     }
@@ -55,7 +55,7 @@ export class MapUI extends GameUI {
     this.region = game.regions.at(this.page);
   }
 
-  override async load(command: string) {
+  override load(command: string) {
     this.handlePage(command);
     this.setRegion();
 

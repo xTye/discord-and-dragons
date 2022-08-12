@@ -1,10 +1,11 @@
 
-import { ButtonStyle, EmbedBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonStyle, CommandInteraction, EmbedBuilder, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ThreadMemberFlagsBitField } from "discord.js";
 import { GameUI } from ".";
 import { game } from "../..";
-import { COLOSSEUM_EMBED, MAP } from "../../lib/conts";
+import { MAP } from "../../lib/conts";
 import { Region } from "../../locations/region";
 import { Player } from "../../player";
+import { VoteRound } from "../../rounds/vote";
 
 const KILL_MESSAGES = [
   "Well played ",
@@ -14,13 +15,27 @@ const KILL_MESSAGES = [
   "Unlucky ",
 ];
 
+const VOTE_MESSAGES = [
+  "Destroy ",
+  "Eliminate ",
+  "%#@$ ",
+  "I hate ",
+  "Screw ",
+];
+
 
 enum ReadyRows { main = 0 }
 enum ReadyButtons { map = 0, ready, start, description, help }
 
-enum SearchRows { travel = 0, main }
+enum SearchRows { select = 0, travel, main }
 enum SearchTravelComponents { select = 0 }
-enum SearchMainComponents { map = 0, travel, activity, powerup, help }
+enum SearchTravelButtonComponents { map = 0, travel }
+enum SearchMainComponents { inventory = 0, activity, help }
+
+enum VoteRows { select = 0, vote, main }
+enum VoteSelectComponents { select = 0 }
+enum VoteTravelButtonComponents { map = 0 }
+enum VoteMainComponents { inventory = 0, activity, help }
 
 export class PlayerUI extends GameUI {
   player: Player;
@@ -32,11 +47,13 @@ export class PlayerUI extends GameUI {
 
   override init() {
     this.embed = new EmbedBuilder()
-      .setTitle(``)
+      .setTitle(this.player.location.channel.name)
+      .setDescription(this.player.inventory.getUI)
       .setColor("#c94b68")
       .setAuthor({ name: this.player.name, iconURL: this.player.picture})
       .setThumbnail(MAP)
-      .setImage(COLOSSEUM_EMBED)
+      .setImage(this.player.location.gif)
+      .setFooter({ text: `${this.player.game.round.name} Round`, iconURL: this.player.location.picture })
       .setTimestamp(new Date());
 
     this.addWhiteSpace();
@@ -51,7 +68,7 @@ export class PlayerUI extends GameUI {
     );
 
     const readyButton = this.createButton(
-      "/player ready",
+      "/player state select:ready",
       "Ready",
       ButtonStyle.Success,
       "✅",
@@ -65,14 +82,14 @@ export class PlayerUI extends GameUI {
     );
 
     const descriptionButton = this.createButton(
-      "/player setdescription",
+      "/player state select:load_description",
       "Set Description",
       ButtonStyle.Secondary,
       "📝",
     );
 
     const helpButton = this.createButton(
-      "/help state:" + game.state,
+      "/help state:" + game.round.name,
       "Help",
       ButtonStyle.Secondary,
       "❔",
@@ -82,9 +99,12 @@ export class PlayerUI extends GameUI {
   }
 
   updateVariables() {
-    this.embed.setAuthor({ name: `Tickets: ${this.player.vote.tickets}`, iconURL: this.player.user.displayAvatarURL()})
-      .setFooter({ text: `Time: ${this.player.travel.timer.minutes}:${this.player.travel.timer.seconds < 10 ? "0" + this.player.travel.timer.seconds : this.player.travel.timer.seconds}`, iconURL: this.player.location.picture })
-      .setTimestamp(new Date());
+    this.embed.setTitle(this.player.location.channel.name)
+      .setDescription(this.player.inventory.getUI)
+      .setImage(this.player.location.gif)
+
+    if (this.player.game.started)
+      this.embed.setColor(this.player.location.color);
 
     this.clearFields();
 
@@ -93,19 +113,18 @@ export class PlayerUI extends GameUI {
     this.addWhiteSpace();
   }
 
-  searchRound() {
+  loadStart() {
+    this.embed.setTimestamp(null);
+  }
+
+  loadSearchRound() {
     this.clearActionRows();
     this.updateVariables();
 
-    this.embed.setTitle(this.player.location.channel.name)
-      .setDescription(this.player.location.description)
-      .setImage(this.player.location.gif)
-      .setColor(this.player.location.color);
-
     if (this.player.location instanceof Region) {
       const regionMenu = this.createSelectMenu(
-        "/travel select:",
-        "Travel to...",
+        "/player travel select:",
+        this.player.travel.destination ? this.player.travel.destination.region.channel.name : "Travel to...",
         this.player.location.regionSelections,
       );
 
@@ -120,43 +139,109 @@ export class PlayerUI extends GameUI {
     );
 
     const travelButton = this.createButton(
-      "/travel",
+      "/player travel",
       "Travel",
-      ButtonStyle.Success,
+      this.player.travel.traveling ? ButtonStyle.Danger : ButtonStyle.Success,
       "🗺️",
-      this.player.travel.destination ? true : false,
+      (this.player.travel.destination ? false : true) || (this.player.travel.traveling ? true : false),
+    );
+
+    this.addActionRow(mapButton, travelButton);
+
+    const inventoryButton = this.createButton(
+      "/player inventory select:load",
+      "Inventory",
+      ButtonStyle.Primary,
+      "🎒",
     );
 
     const activityButton = this.createButton(
-      "/activity",
+      "/player activity",
       "Activity",
       this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
       this.player.location.activity ? this.player.location.activity.emoji : "🔘",
       this.player.location.activity ? false : true,
     );
 
-    const powerUpsButton = this.createButton(
-      "/pop",
-      "Power Ups",
-      this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
-      this.player.location.activity ? this.player.location.activity.emoji : "🔘",
-      this.player.location.activity ? false : true,
-    );
-
     const helpButton = this.createButton(
-      "/help state:" + game.state,
+      "/help state:" + game.round.name,
       "Help",
       ButtonStyle.Secondary,
       "❔",
     );
 
-    this.addActionRow(mapButton, travelButton, activityButton, powerUpsButton, helpButton);
+    this.addActionRow(inventoryButton, activityButton, helpButton);
+  }
+
+  loadTraveling() {
+    this.updateVariables();
+    this.setDisabledComponentInActionRow(SearchRows.select, SearchTravelComponents.select, true);
+
+    const activityButton = this.createButton(
+      "/player activity",
+      "Activity",
+      this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
+      this.player.location.activity ? this.player.location.activity.emoji : "🔘",
+      this.player.location.activity ? false : true,
+    );
+
+    this.setComponentInRow(SearchRows.main, SearchMainComponents.activity, activityButton);
+    
+    const travelButton = this.createButton(
+      "/player travel",
+      "Travel",
+      this.player.travel.traveling ? ButtonStyle.Danger : ButtonStyle.Success,
+      "🗺️",
+      (this.player.travel.destination ? false : true) || (this.player.travel.traveling ? true : false),
+    );
+
+    this.setComponentInRow(SearchRows.travel, SearchTravelButtonComponents.travel, travelButton);
+  }
+
+  loadTraveled() {
+    this.updateVariables();
+    this.setDisabledComponentInActionRow(SearchRows.select, SearchTravelComponents.select, false);
+
+    if (this.player.location instanceof Region) {
+      const regionMenu = this.createSelectMenu(
+        "/player travel select:",
+        this.player.travel.destination ? this.player.travel.destination.region.channel.name : "Travel to...",
+        this.player.location.regionSelections,
+      );
+
+      this.setComponentInRow(SearchRows.select, SearchTravelComponents.select, regionMenu);
+    }
+
+    const activityButton = this.createButton(
+      "/player activity",
+      "Activity",
+      this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
+      this.player.location.activity ? this.player.location.activity.emoji : "🔘",
+      this.player.location.activity ? false : true,
+    );
+
+    this.setComponentInRow(SearchRows.main, SearchMainComponents.activity, activityButton);
+
+    const travelButton = this.createButton(
+      "/player travel",
+      "Travel",
+      this.player.travel.traveling ? ButtonStyle.Danger : ButtonStyle.Success,
+      "🗺️",
+      (this.player.travel.destination ? false : true) || (this.player.travel.traveling ? true : false),
+    );
+
+    this.setComponentInRow(SearchRows.travel, SearchTravelButtonComponents.travel, travelButton);
+  }
+
+  loadRegionUpdate() {
+    this.updateVariables();
   }
 
   kill() {
     this.clearActionRows();
     this.updateVariables();
     this.clearFields();
+    this.embed.setFooter(null);
 
     this.embed.setTitle(KILL_MESSAGES[Math.floor(Math.random() * KILL_MESSAGES.length)] + this.player.name)
      .setDescription("Mankind is poised midway between the gods and the beasts. You have reached your fate, while the others will live on to step on your ashes.\n\n" +
@@ -167,47 +252,153 @@ export class PlayerUI extends GameUI {
      .setImage(null);
   }
 
-  override load() {
-    this.updateVariables();
+  async loadModalDescription(interaction: CommandInteraction) {
+    const textIn = new TextInputBuilder()
+      .setStyle(TextInputStyle.Paragraph)
+      .setLabel("Description")
+      .setRequired(true)
+      .setCustomId("set_description")
+      .setMinLength(1)
+      .setMaxLength(47)
 
-    if (game.state === GameStateType.READY) {
-      this.embed.setColor(this.player.ready ? "#4bc97f" : "#c94b68");
+    const rows: ActionRowBuilder<TextInputBuilder> = new ActionRowBuilder({ components: [textIn] });
 
-      const readyButton = this.createButton(
-        "/player ready",
-        this.player.ready ? "Unready" : "Ready",
-        this.player.ready ? ButtonStyle.Danger : ButtonStyle.Success,
-        this.player.ready ? { name: "redcross", id: "758380151238033419" } : "✅",
+    const modal = new ModalBuilder()
+      .setTitle("Set Game Description")
+      .setCustomId("/player state select:set_description")
+      .addComponents(rows)
+
+    await interaction.showModal(modal)
+  }
+
+  loadSetDescription() {
+    this.clearFields();
+
+    this.addWhiteSpace();
+    this.addFields(...this.player.location.playersFields.values());
+    this.addWhiteSpace();
+  }
+
+  loadSetDestination() {
+    if (this.player.location instanceof Region) {
+      const regionMenu = this.createSelectMenu(
+        "/player travel select:",
+        this.player.travel.destination ? this.player.travel.destination.region.channel.name : "Travel to...",
+        this.player.location.regionSelections,
       );
 
-      this.setComponentInRow(ReadyRows.main, ReadyButtons.ready, readyButton);
+      this.setComponentInRow(SearchRows.select, SearchTravelComponents.select, regionMenu);
     }
 
-    else if (game.state === GameStateType.SEARCH) {
-      this.embed.setTitle(this.player.location.channel.name)
-        .setDescription(this.player.location.description)
-        .setImage(this.player.location.gif)
-        .setColor(this.player.location.color);
+    const travelButton = this.createButton(
+      "/player travel",
+      "Travel",
+      this.player.travel.traveling ? ButtonStyle.Danger : ButtonStyle.Success,
+      "🗺️",
+      (this.player.travel.destination ? false : true) || (this.player.travel.traveling ? true : false),
+    );
 
-      const activityButton = this.createButton(
-        "/activity",
-        "Activity",
-        this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
-        this.player.location.activity ? this.player.location.activity.emoji : "🔘",
-        this.player.location.activity ? false : true,
-      );
+    this.setComponentInRow(SearchRows.travel, SearchTravelButtonComponents.travel, travelButton);
+  }
 
-      const powerUpsButton = this.createButton(
-        "/pop",
-        "Power Ups",
-        this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
-        this.player.location.activity ? this.player.location.activity.emoji : "🔘",
-        this.player.location.activity ? false : true,
+  loadReady() {
+    this.embed.setColor(this.player.ready ? "#4bc97f" : "#c94b68");
+
+    this.clearFields();
+
+    this.addWhiteSpace();
+    this.addFields(...this.player.location.playersFields.values());
+    this.addWhiteSpace();
+
+    const readyButton = this.createButton(
+      "/player state select:ready",
+      this.player.ready ? "Unready" : "Ready",
+      this.player.ready ? ButtonStyle.Danger : ButtonStyle.Success,
+      this.player.ready ? { name: "redcross", id: "758380151238033419" } : "✅",
+    );
+
+    this.setComponentInRow(ReadyRows.main, ReadyButtons.ready, readyButton);
+  }
+
+  loadVoteRound() {
+    this.clearActionRows();
+    this.updateVariables();
+
+    if (this.player.game.round instanceof VoteRound) {
+      const voteMenu = this.createSelectMenu(
+        "/player vote select:",
+        this.player.vote.player ? this.player.vote.player.name : "Vote for...",
+        this.player.game.round.selections,
       );
-      
-      this.setDisabledComponentInActionRow(SearchRows.travel, SearchTravelComponents.select, this.player.travel.traveling);
-      this.setDisabledComponentInActionRow(SearchRows.main, SearchMainComponents.travel, this.player.travel.traveling);
-      this.setComponentInRow(SearchRows.main, SearchMainComponents.activity, activityButton);
+  
+      this.addActionRow(voteMenu);
+    }
+
+    const mapButton = this.createButton(
+      "/map page:default",
+      "Map",
+      ButtonStyle.Secondary,
+      { name: "string", id: "975968769174274078" },
+    );
+
+    this.addActionRow(mapButton);
+
+    const inventoryButton = this.createButton(
+      "/player inventory select:load",
+      "Inventory",
+      ButtonStyle.Primary,
+      "🎒",
+    );
+
+    const activityButton = this.createButton(
+      "/player activity",
+      "Activity",
+      this.player.location.activity ? ButtonStyle.Primary : ButtonStyle.Secondary,
+      this.player.location.activity ? this.player.location.activity.emoji : "🔘",
+      this.player.location.activity ? false : true,
+    );
+
+    const helpButton = this.createButton(
+      "/help state:" + game.round.name,
+      "Help",
+      ButtonStyle.Secondary,
+      "❔",
+    );
+
+    this.addActionRow(inventoryButton, activityButton, helpButton);
+  }
+
+  async loadVoteModal(interaction: CommandInteraction) {
+    const textIn = new TextInputBuilder()
+      .setStyle(TextInputStyle.Short)
+      .setLabel(`You currently have ${this.player.inventory.tickets} tickets.`)
+      .setRequired(true)
+      .setCustomId("tickets")
+      .setPlaceholder("How many tickets would you like to vote with?")
+      .setMinLength(1)
+      .setMaxLength(2)
+
+    const rows: ActionRowBuilder<TextInputBuilder> = new ActionRowBuilder({ components: [textIn] });
+
+    const modal = new ModalBuilder()
+      .setTitle(`${VOTE_MESSAGES[Math.floor(Math.random() * VOTE_MESSAGES.length)]} ${this.player.vote.player?.name}`)
+      .setCustomId("/player vote select:tickets")
+      .addComponents(rows)
+
+    await interaction.showModal(modal);
+  }
+
+  loadVoteUpdate() {
+    this.updateVariables();
+
+    if (this.player.game.round instanceof VoteRound) {
+      const voteMenu = this.createSelectMenu(
+        "/player vote select:",
+        this.player.vote.player ? this.player.vote.player.name : "Vote for...",
+        this.player.game.round.selections,
+      );
+  
+      this.setComponentInRow(VoteRows.select, VoteSelectComponents.select, voteMenu);
     }
   }
 }

@@ -47,10 +47,19 @@ client.on("interactionCreate", async (interaction) => {
 
 		const id = commandName[commandName.length - 1];
 
-		if (commandName[1] === COMMANDS.PLAYER.STATE.SELECT.LEAVE || 
-			commandName[1] === COMMANDS.PLAYER.STATE.SELECT.JOIN) {}
+		if ((commandName[1] === COMMANDS.PLAYER.STATE.NAME && commandName[2].split(':')[1] === COMMANDS.PLAYER.STATE.SELECT.LEAVE) || 
+			(commandName[1] === COMMANDS.PLAYER.STATE.NAME && commandName[2].split(':')[1] === COMMANDS.PLAYER.STATE.SELECT.JOIN) || 
+			(commandName[1] === COMMANDS.PLAYER.STATE.NAME && commandName[2].split(':')[1] === COMMANDS.PLAYER.STATE.SELECT.SYNC_MESSAGE) || 
+			(commandName[1] === COMMANDS.PLAYER.STATE.NAME && commandName[2].split(':')[1] === COMMANDS.PLAYER.STATE.SELECT.SYNC_VOICE)) {}
 		else if (id != interaction.user.id) {await interaction.reply({ content: "These are not the buttons you are looking for.", ephemeral: true }); return;}
-	} 
+	}
+	else if (interaction.isModalSubmit()) {
+		commandName = interaction.customId.split(' ');
+
+		for (const [id, field] of interaction.fields.fields) {
+			commandName.push(field.value);
+		}
+	}
 	else return;
 
 	commandName[0] = commandName[0].slice(1);
@@ -62,7 +71,9 @@ client.on("interactionCreate", async (interaction) => {
 		await command.execute(interaction, commandName);
 	} catch (error) {
 		console.error(error);
-		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+
+		if (!interaction.replied)
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
 	}
 });
 

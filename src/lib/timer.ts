@@ -44,7 +44,7 @@ export class GameTimer {
     this.milliseconds = milliseconds;
 
     this.interval = setInterval(() => {
-      this.milliseconds = this.milliseconds - GameTimer.INCREMENT_MILLIS;
+      this.setMilliseconds = this.milliseconds - GameTimer.INCREMENT_MILLIS;
     }, GameTimer.INCREMENT_MILLIS);
   }
 
@@ -54,7 +54,7 @@ export class GameTimer {
 
   customInterval(func: () => void, milliseconds: number) {
     this.setMilliseconds = milliseconds;
-    setInterval(func, milliseconds);
+    this.interval = setInterval(func, milliseconds);
   }
 
   startTimer(func: () => void, milliseconds: number) {

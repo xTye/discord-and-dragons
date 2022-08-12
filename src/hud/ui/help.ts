@@ -1,7 +1,6 @@
 import { EmbedBuilder } from "@discordjs/builders";
 import { ActionRowBuilder, APIEmbedField, ButtonBuilder, ButtonStyle, MessageActionRowComponentBuilder, MessageOptions, Snowflake } from "discord.js";
 import { GameUI } from ".";
-import { game } from "../..";
 import { HELP_GIF } from "../../lib/conts";
 
 export class HelpUI extends GameUI {
@@ -12,7 +11,7 @@ export class HelpUI extends GameUI {
         .setThumbnail(HELP_GIF);
 
       const cancelButton = this.createButton(
-        "/player sync",
+        "/player state select:sync_message",
         "Cancel",
         ButtonStyle.Danger,
         { name: "redcross", id: "758380151238033419" },
@@ -81,69 +80,83 @@ export class HelpUI extends GameUI {
     );
 
     const joinButton = new ButtonBuilder()
-      .setCustomId("/player join")
+      .setCustomId("/player state select:join")
       .setLabel("Join")
       .setStyle(ButtonStyle.Success)
       .setEmoji("✔️");
     
-    const syncButton = new ButtonBuilder()
-      .setCustomId("/player sync voice:yes")
-      .setLabel("Sync")
+    const syncVoiceButton = new ButtonBuilder()
+      .setCustomId("/player state select:sync_voice")
+      .setLabel("Sync Voice")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("♻️");
+
+    const syncMessageButton = new ButtonBuilder()
+      .setCustomId("/player state select:sync_message")
+      .setLabel("Sync UI")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("♻️");
 
     const leaveButton = new ButtonBuilder()
-      .setCustomId("/player leave")
+      .setCustomId("/player state select:leave")
       .setLabel("Leave")
       .setStyle(ButtonStyle.Danger)
       .setEmoji("🗑");
 
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>()
-      .addComponents([joinButton, syncButton, leaveButton]);
+      .addComponents([joinButton, syncVoiceButton, syncMessageButton, leaveButton]);
     
     return { embeds: [tutorial], components: [row] };
   }
 
   loadSync() {
+    this.clearActionRows();
+
     this.embed.setTitle("Uh oh!")
       .setDescription("Something, catastrophic happened between your voice and our world. Click the sync button to try to connect to voice chat again, or ignore it and go #stealthmode");
 
-    const syncButton = new ButtonBuilder()
-      .setCustomId("/player sync voice:yes")
-      .setLabel("Sync")
+    const syncVoiceButton = new ButtonBuilder()
+      .setCustomId("/player state select:sync_voice")
+      .setLabel("Sync Voice")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("♻️");
+
+    const syncMessageButton = new ButtonBuilder()
+      .setCustomId("/player state select:sync_message")
+      .setLabel("Sync UI")
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("♻️");
 
     const leaveButton = new ButtonBuilder()
-      .setCustomId("/player sync")
-      .setLabel("")
+      .setCustomId("/player state select:leave")
+      .setLabel("Rage Quit")
       .setStyle(ButtonStyle.Danger)
       .setEmoji("🗑");
 
-    this.addActionRow(syncButton, leaveButton);
+    this.addActionRow(syncVoiceButton, syncMessageButton, leaveButton);
   }
 
-  override load() {
-    this.clearFields();
+  // override load() {
+  //   this.clearFields();
 
-    if (game.state === GameStateType.READY) {
-      this.addFields(
-        HelpUI.ready(),
-      );
-    }
+  //   if (game.state === GameStateType.READY) {
+  //     this.addFields(
+  //       HelpUI.ready(),
+  //     );
+  //   }
 
-    else if (game.state === GameStateType.SEARCH) {
-      this.addFields(
-        HelpUI.search(),
-        GameUI.whiteSpace(),
-        HelpUI.activity(),
-      );
-    }
+  //   else if (game.state === GameStateType.SEARCH) {
+  //     this.addFields(
+  //       HelpUI.search(),
+  //       GameUI.whiteSpace(),
+  //       HelpUI.activity(),
+  //     );
+  //   }
 
-    else if (game.state === GameStateType.VOTE) {
-      this.addFields(
-        HelpUI.ready(),
-      );
-    }
-  }
+  //   else if (game.state === GameStateType.VOTE) {
+  //     this.addFields(
+  //       HelpUI.ready(),
+  //     );
+  //   }
+  // }
 }

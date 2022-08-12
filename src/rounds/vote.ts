@@ -5,7 +5,7 @@ import { graph } from "../lib/conts";
 import { GameTimer } from "../lib/timer";
 import { Player } from "../player";
 
-enum ERR_CODES {DEFAULT, MAX_TIES, SUCCESS, TIE};
+enum ERR_CODES {DEFAULT = 0, MAX_TIES, SUCCESS, TIE};
 
 export type VoteType = {
   numVotes: number;
@@ -21,6 +21,7 @@ const LAST_WORDS_TIME = GameTimer.tenSec;
 export class VoteRound extends GameRound {
   err: ERR_CODES;
   ties: number;
+  nameRound: string = "Vote";
   player?: Player;
   immuneRound: boolean;
   counting: boolean;
@@ -43,7 +44,7 @@ export class VoteRound extends GameRound {
   async vote(interaction: CommandInteraction, player: Player) {
     if (this.counting) {await interaction.reply({ content: "Cannot submit votes when counting.", ephemeral: true }); return;}
     if (!player.vote.tickets) {await interaction.reply({ content: "You must vote with a valid form of tickets.", ephemeral: true }); return;}
-    if (player.vote.tickets < player.inventory.tickets) {await interaction.reply({ content: "You cannot vote with more tickets than you have.", ephemeral: true }); return;}
+    if (player.vote.tickets > player.inventory.tickets) {await interaction.reply({ content: "You cannot vote with more tickets than you have.", ephemeral: true }); return;}
     if (!player.vote.player) {await interaction.reply({ content: "Your selection for a player is not valid.", ephemeral: true }); return;}
 
     const vote = this.votes.get(player.vote.player.user.id);
@@ -59,7 +60,9 @@ export class VoteRound extends GameRound {
   
     vote.numVotes += player.vote.tickets;
     
-    await player.hud.loadRoundUpdate();
+    await interaction.reply({ content: "Voting..." });
+    await player.hud.loadVoteUpdate();
+    await interaction.deleteReply();
   }
 
   initPlayer(player: Player) {
@@ -75,48 +78,52 @@ export class VoteRound extends GameRound {
     console.log("Entering voting round.");
     this.loading = true;
 
+    this.selections = [];
+
     //# Kills player if can't be moved
-    this.game.players.forEach((player, id) => {
-      player.voteStart(this.game.locationVote ? this.game.locationVote : graph.lair.region, this);
-    });
+    for (const [id, player] of this.game.players) {
+      await player.voteStart(this.game.locationVote ? this.game.locationVote : graph.lair.region, this);
+    }
 
     for (const [id, player] of this.game.players) {
-      await player.hud.loadVoteStart();
-    };
+      await player.hud.loadVoteRound();
+    }
+
     this.loading = false;
   }
 
   override async start() {
     await this.init();
 
-    this.timer.startTimer(() => {
-      this.iterator();
+    this.timer.startTimer(async () => {
+      await this.iterator();
     }, VOTE_TIME);
   }
 
-  private iterator() {
+  private async iterator() {
     this.ties += 1;
     this.count();
 
     if (this.ties < MAX_TIES) {
       if (this.err === ERR_CODES.SUCCESS) {
-        this.end();
+        await this.end();
       }
       else {
-        console.log("It was a tie");
+        console.log("It was a tie.");
 
-        this.game.players.forEach((player, id) => {
-          player.hud.loadVoteTie();
-        });
+        for (const [id, player] of this.game.players) {
+          player.inventory.refundTickets();
+          player.hud.loadAlert("Uh oh", "There has been a tie... This calls for a revote.");
+        }
 
         //# Try again
-        this.start();
+        await this.start();
       }
     }
     //DESC Iterate next round
     else {
       this.err = ERR_CODES.MAX_TIES;
-      this.end();
+      await this.end();
     }
   }
 
@@ -132,8 +139,10 @@ export class VoteRound extends GameRound {
           TICKET_INC_IMMUNE,
           this.err === ERR_CODES.MAX_TIES,
         );
-      });
-    
+
+        await player.hud.loadAlert("The results are in!", `${this.player ? this.player.name : "No one"} was choosen for immunity.`);
+      }
+
       this.game.newRound();
     } else {
       if (!this.player)
@@ -144,32 +153,33 @@ export class VoteRound extends GameRound {
       if (this.player) {
         this.player.lastWords();
 
-        this.game.players.forEach(async (player, id) => {
+        for (const [id, player] of this.game.players) {
           if (!player.stats.muted && this.player != player) {
+            player.hud.loadAlert("The results are in!", `${this.player.name} was choosen to die.\nLet us take a moment silence for our fallen hero <@${this.player.user.id}>`);
             await player.user.voice.setSuppressed(true);
           }
-        });
+        }
       }
 
 
-      this.timer.startTimer(() => {
-        this.game.players.forEach((player, id) => {
-          player.voteEnd(
+      this.timer.startTimer(async () => {
+        for (const [id, player] of this.game.players) {
+          await player.voteEnd(
             TICKET_INC_DEATH,
             false,
           );
-        });
+        };
 
-        this.player?.kill();
+        await this.player?.kill();
       
-        this.game.newRound();
+        await this.game.newRound();
       }, LAST_WORDS_TIME)
     }
   }
 
   private count() {
     //# No more iterations
-    if (this.votes.size === 0) {
+    if (this.votes.size <= 1) {
       this.err = ERR_CODES.TIE;
       return;
     }
@@ -178,7 +188,7 @@ export class VoteRound extends GameRound {
     let tie = new Collection<Snowflake, VoteType>();
   
     //# Count the votes
-    this.votes.forEach((voters, votee) => {
+    for (const [votee, voters] of this.votes) {
       if (voters.numVotes > numVotes){
         numVotes = voters.numVotes;
         tie.clear();
@@ -186,7 +196,7 @@ export class VoteRound extends GameRound {
       }; 
       if (voters.numVotes == numVotes)
         tie.set(votee, voters);
-    });
+    };
   
     //# Handle a tie
     if (tie.size > 1) {

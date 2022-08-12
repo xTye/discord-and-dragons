@@ -42,7 +42,7 @@ export async function init() {
     if (help.load) {
       const tutorialChannel = client.channels.cache.get(help.id);
   
-      if (tutorialChannel && tutorialChannel.isText()) {
+      if (tutorialChannel && tutorialChannel.isTextBased()) {
         const messages = await tutorialChannel.messages.fetch();
         messages.forEach(async (message, id) => {
           await message.delete();

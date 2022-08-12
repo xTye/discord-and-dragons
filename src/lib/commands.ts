@@ -25,6 +25,7 @@ export const COMMANDS = {
         SET_DESCRIPTION: "set_description",
         SYNC_MESSAGE: "sync_message",
         SYNC_VOICE: "sync_voice",
+        CANCEL_ALERT: "cancel_alert",
         },
       },
     TRAVEL: {
@@ -41,6 +42,9 @@ export const COMMANDS = {
       SELECT: {
         NAME: "select",
         DESCRIPTION: "Select an item to load",
+        LOAD: "load",
+        CONSUME: "consume",
+        DESELECT: "deselect",
       },
     },
     VOTE: {
@@ -48,12 +52,10 @@ export const COMMANDS = {
       DESCRIPTION: "Vote for a player",
       SELECT: {
         NAME: "select",
-        DESCRIPTION: "Select a player to vote for",
+        DESCRIPTION: "Select an option for voting",
+        PLAYER: "player",
+        TICKETS: "tickets",
       },
-      WITH: {
-        NAME: "with",
-        DESCRIPTION: "Vote for a player with a number of tickets",
-      }
     },
     ACTIVITY: {
       NAME: "activity",
@@ -64,8 +66,7 @@ export const COMMANDS = {
         JOIN: "join",
         ROCK: "rock",
         LEAVE: "leave",
-        VOTE_YES: "vote_yes",
-        VOTE_NO: "vote_no",
+        VOTE: "vote",
         VOTE_LOAD: "vote_load",
       },
     },

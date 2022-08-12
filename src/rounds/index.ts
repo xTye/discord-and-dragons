@@ -4,6 +4,7 @@ import { GameTimer } from "../lib/timer";
 export class GameRound {
   started: boolean;
   loading: boolean;
+  nameRound: string = "Undefined";
   game: Game;
   time: number;
   timer: GameTimer;
@@ -22,4 +23,5 @@ export class GameRound {
     this.timer.startTimer(() => {}, this.time);
   }
 
+  get name() {return this.nameRound}
 }

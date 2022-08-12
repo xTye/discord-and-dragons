@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonInteraction, CommandInteraction } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
 import { game } from '..';
 import { COMMANDS } from '../lib/commands';
 
@@ -31,7 +31,7 @@ export default {
       let page = command[1].match(regex)?.toString();
       if (!page) { await interaction.reply({ content: "Internal server error, please try again", ephemeral: true }); return; }
 
-      player.hud.loadMap(interaction, page);
+      player.hud.loadMap(interaction, page, game);
     }
   },
 };

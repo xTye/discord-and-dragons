@@ -1,4 +1,4 @@
-import { ButtonBuilder, EmbedBuilder, ActionRowBuilder, MessageActionRowComponentBuilder, ButtonStyle, Snowflake, APISelectMenuOption, SelectMenuBuilder, APIEmbedField } from "discord.js";
+import { ButtonBuilder, EmbedBuilder, ActionRowBuilder, MessageActionRowComponentBuilder, ButtonStyle, Snowflake, APISelectMenuOption, SelectMenuBuilder, APIEmbedField, APIMessageComponentEmoji } from "discord.js";
 import { Player } from "../../player";
 
 export class GameUI {
@@ -13,22 +13,29 @@ export class GameUI {
     this.actionrows = [];
   }
 
+  load(command?: string) {}
+
   loadTimers() {
     if (this.player && this.player.game.started) {
-      let timers = `Round: ${this.player.game.timer.string}`;
+      let timers = `Round: ${this.player.game.round.timer.string}`;
 
       if (this.player.travel.traveling)
-      timers += ` | Travel: ${this.player.travel.timer.string}`;
+        timers += ` | Travel: ${this.player.travel.timer.string}`;
 
       if (this.player.active) {
         if (this.player.active.activity.timer)
-        timers += ` | Activity: ${this.player.active.activity.timer}`;
+          timers += ` | Activity: ${this.player.active.activity.timer.string}`;
         else
-        timers += ` | Activity: ${this.player.active.timer}`;
+          if (this.player.active.timer)
+            timers += ` | Activity: ${this.player.active.timer.string}`;
       }
 
+      if (this.player.stats.muted)
+        timers += ` | Muted: ${this.player.stats.muted.string}`;
+      
+
       this.embed.setFooter({
-        text: timers,
+        text: `${this.player.game.round.name} ${timers}`,
         iconURL: this.player.location.picture
       });
     }
@@ -72,7 +79,17 @@ export class GameUI {
     }
   }
 
-  createButton(command: string, label: string, style?: ButtonStyle, emoji?: { name: string, id: Snowflake } | string, disabled?: boolean) {
+  /**
+ * Function for joining a game. Create a new player object, and adds the instance to 
+ * the current players in the game.
+ * 
+ * @param command custom id of the button meant to be used as a command interaction
+ * @param label label of the button
+ * @param style style of the button
+ * @param emoji emoji of the button
+ * @param disable true is disable
+ */
+  createButton(command: string, label: string, style?: ButtonStyle, emoji?: APIMessageComponentEmoji | string, disabled?: boolean) {
     const button = new ButtonBuilder()
       .setCustomId(command + ' ' + this.id)
       .setStyle(style ? style : ButtonStyle.Primary)

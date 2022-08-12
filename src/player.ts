@@ -8,6 +8,7 @@ import { GameTimer } from "./lib/timer";
 import { ConnectedRegion } from "./locations/region";
 import { VoteRound } from "./rounds/vote";
 import { GameItem } from "./items";
+import player from "./commands/player";
 
 const DEFAULT_TICKETS = 1;
 
@@ -23,51 +24,72 @@ class Inventory {
   private player: Player;
   private storedTickets: number;
   private spentTickets: number;
+  private ui: string;
   private items: Collection<string, GameItem>;
   private select?: GameItem;
+  private selections: APISelectMenuOption[];
 
   constructor(player: Player, tickets?: number) {
     this.player = player
     this.storedTickets = tickets ? tickets : DEFAULT_TICKETS;
     this.spentTickets = 0;
     this.items = new Collection<string, GameItem>();
+    this.selections = [];
+
+    this.ui = `<a:ticket:981815976838447115> - ${this.tickets}\n`;
   }
 
   get getSelect() {return this.select;}
 
-  getItem(name: string) {
-    return this.items.get(name);
+  get getUI() {return `**Inventory:**\n${this.ui}`;}
+
+  get getSelections() {return this.selections;}
+
+  updateUI() {
+    this.selections = [];
+    this.ui = `<a:ticket:981815976838447115> - ${this.tickets}\n`;
+
+    for (const [name, item] of this.items) {
+      this.ui += `${item.getEmoji} - ${item.quantity}\n`;
+      this.selections.push(item.selection);
+    }
+
+    this.player.hud.loadInventory();
+  }
+
+  getItem(id: string) {
+    return this.items.get(id);
   }
 
   async setItem(item?: GameItem) {
     this.select = item;
 
-    if (item)
-      this.player.hud.loadItemSelect();
+    this.player.hud.loadItemSelect(this.player);
   }
 
   addItem(newItem: GameItem, quantity?: number) {
-    const item = this.items.get(newItem.name);
+    const item = this.items.get(newItem.id);
 
     if (item) {
       item.quantity += quantity ? quantity : 1;
     } else {
-      this.items.set(newItem.name, newItem);
+      this.items.set(newItem.id, newItem);
     }
+
+    this.updateUI();
   }
 
-  async consumeItem(interaction: CommandInteraction, item: GameItem) {
-    const usedItem = item.use(interaction);
-    if (!usedItem) return;
+  async consumeItem(item: GameItem) {
+    this.select = undefined;
+
+    const usedItem = item.use();
+    if (usedItem === undefined) return;
 
     item.quantity--;
     if (item.quantity <= 0)
-      this.items.delete(item.name);
+      this.items.delete(item.id);
 
-    if (interaction.replied)
-      await this.player.hud.loadItemConsume();
-    else
-      await this.player.hud.loadItemConsume(interaction);
+    this.updateUI();
   }
 
   refundTickets() {
@@ -77,14 +99,20 @@ class Inventory {
   submitTickets() {
     this.storedTickets = this.tickets;
     this.spentTickets = 0;
+
+    this.updateUI();
   }
 
   set spendTickets(tickets: number) {
-    this.spendTickets += tickets;
+    this.spentTickets += tickets;
+
+    this.updateUI();
   }
 
   set addTickets(tickets: number) {
     this.storedTickets += tickets;
+
+    this.updateUI();
   }
 
   get tickets() {
@@ -151,7 +179,7 @@ export class Player {
       description: this.description,
       emoji,
     }
-    this.field = { name: "Not ready", value: `<:${emoji.name}:${emoji.id}><@${user.id}>` };
+    this.field = { name: "Not ready", value: `<:${emoji.name}:${emoji.id}><@${user.id}> - ${this.description}` };
     this.location = location;
     this.hud = new GameHUD(user.id, this);
     this.ready = false;
@@ -169,7 +197,7 @@ export class Player {
     this.location.playerJoined(this);
   }
 
-  async readyUp(interaction: CommandInteraction) {
+  async readyUp() {
     this.ready = !this.ready;
     this.field.name = this.ready ? "Ready" : "Not Ready";
 
@@ -178,32 +206,44 @@ export class Player {
     else
       this.game.readyQueue.pop();
 
-    await this.hud.loadReady(interaction);
+    for (const [id, player] of this.game.players) {
+      player.hud.loadReady();
+    }
+
+    await this.hud.render();
   }
 
-  setDescription(description: string) {
+  async setDescription(description: string) {
     const cut = description.length > 46 ? `${description.substring(0, 46)}..` : description;
     this.description = cut;
     this.selection.description = cut;
 
+    this.field = { name: this.ready ? "Ready" : "Not Ready", value: `<:${this.emoji.name}:${this.emoji.id}><@${this.user.id}> - ${this.description}` }
+    this.location.playersFields.set(this.user.id, this.field);
+
+    this.game.updatePlayerSelections();
+
     for (const [id, player] of this.game.players) {
       player.hud.loadSetDescription();
     }
+
+    await this.hud.render();
   }
 
   async kill() {
     await this.game.removePlayer(this);
+    this.game.updatePlayerSelections();
     await this.user.roles.remove(PLAYER_ROLE_ID);
     await this.user.voice.setSuppressed(true);
     await this.hud.loadPlayerKill();
   }
 
-  syncMessage(interaction: CommandInteraction) {
-    this.hud.renderPlayerUI(interaction);
+  async syncMessage(interaction: CommandInteraction) {
+    await this.hud.renderPlayerUI(interaction);
   }
 
-  syncVoice() {
-    this.move(this.location.channel.id, true);
+  async syncVoice() {
+    await this.move(this.location.channel.id, true);
   }
 
   async move(dest: Snowflake, force?: boolean) {
@@ -230,6 +270,9 @@ export class Player {
   }
 
   setActivity(active?: { activity: GameActivity, timer?: GameTimer, vote?: boolean }) {
+    if (this.active?.timer)
+      this.active.timer.stopTimer();
+    
     this.active = active;
   }
 
@@ -237,8 +280,10 @@ export class Player {
 //HEAD This is the travel section
 //# =========================================
 
-  setDestination(destination?: ConnectedRegion) {
+  async setDestination(destination?: ConnectedRegion) {
     this.travel.destination = destination;
+
+    await this.hud.loadSetDestination();
   }
 
   /**
@@ -246,26 +291,26 @@ export class Player {
    * 
    * @param interaction used for reply
    */
-  beginTravel(interaction: CommandInteraction, dest: ConnectedRegion) {
+  async beginTravel(interaction: CommandInteraction, dest: ConnectedRegion) {
     this.travel.traveling = true;
     
     this.location.playerLeft(this);
-    this.move(dest.route.channel.id);
+    await this.move(dest.route.channel.id);
     this.location = dest.route;
     this.location.playerJoined(this);
-    this.hud.loadTravel(interaction);
+    await this.hud.loadTraveling(interaction);
 
-    this.travel.timer.startTimer(() => {
+    this.travel.timer.startTimer(async () => {
       this.location.playerLeft(this);
 
-      this.move(dest.region.channel.id);
+      await this.move(dest.region.channel.id);
       this.location = dest.region;
       this.location.playerJoined(this);
 
 
       this.travel.destination = undefined;
       this.travel.traveling = false;
-      this.hud.loadTravel();
+      await this.hud.loadTraveled();
     }, dest.route.getTravelTime(this.stats.travelMult));
   }
 
@@ -273,8 +318,10 @@ export class Player {
 //HEAD This is the vote section
 //# =========================================
 
-  setVotePlayer(player?: Player) {
+  async setVotePlayer(interaction: CommandInteraction, player: Player) {
     this.vote.player = player;
+
+    await this.hud.loadVoteModal(interaction);
   }
 
   setVoteTickets(tickets?: number) {
@@ -324,6 +371,7 @@ export class Player {
   async lastWords() {
     if (this.stats.muted) {
       this.stats.muted.stopTimer();
+      this.stats.muted = undefined;
       await this.user.voice.setSuppressed(false);
     }
   }

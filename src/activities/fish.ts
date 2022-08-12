@@ -1,4 +1,4 @@
-import { CommandInteraction } from "discord.js";
+import { CommandInteraction, EmbedBuilder } from "discord.js";
 import { GameActivity } from ".";
 import { COMMANDS } from "../lib/commands";
 import { GameTimer } from "../lib/timer";
@@ -6,23 +6,25 @@ import { GameLocation } from "../locations";
 import { Player } from "../player";
 
 const HOWTO_JOIN = "You can join the activity here by throwing a line or throwing a rock.";
-const HOWTO_PLAY = `Sit back, relax, talk to your peers and watch your line.`;
+const HOWTO_PLAY = "Sit back, relax, talk to your peers and watch your line.";
 
-const NAME = "Fish";
+const NAME = "Fish or Rock";
 const CATCH_CHANCE = 0.10;
 const MAX_TICKETS = 3;
 const FISH_TIME = GameTimer.thirtySec;
 const ROCK_TIME = GameTimer.thirtySec;
 const GIF = "https://mir-s3-cdn-cf.behance.net/project_modules/max_1200/0ab4b036812305.572a1cada9fdc.gif";
+const COLOR = "#793F98";
 const EMOJI = "🎣";
+const SAFE_START_TIME = GameTimer.thirtySec;
 
 export class Fish extends GameActivity {
   tickets: number;
   chance: number;
   chanceModifier: number;
 
-  constructor(region: GameLocation) {
-    super(NAME, region, GIF, EMOJI);
+  constructor(location: GameLocation) {
+    super(NAME, location, HOWTO_JOIN, HOWTO_PLAY, GIF, COLOR, EMOJI, SAFE_START_TIME);
 
     this.tickets = this.generateRandomTickets(MAX_TICKETS);
     this.chance = CATCH_CHANCE;
@@ -36,44 +38,43 @@ export class Fish extends GameActivity {
   override newRound() {
     this.chance = CATCH_CHANCE;
     this.chanceModifier = 0;
+    this.tickets = this.generateRandomTickets(MAX_TICKETS);
   }
-
-
 
   override async update(interaction: CommandInteraction, player: Player, command: string) {
     if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.JOIN) {
-      this.fish(interaction, this.join(player));
+      await this.fish(interaction, this.join(player));
     } else if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.ROCK) {
-      this.rock(interaction, this.join(player));
-    } else if (command === COMMANDS.PLAYER.ACTIVITY.SELECT.LEAVE) {
-      this.leave(player);
-      player.hud.loadActivity(interaction);
+      await this.rock(interaction, this.join(player));
     } else {
       await interaction.reply({ content: "Not a valid command at this location.", ephemeral: true });
+      return;
     }
   }
 
 
 
 
-  private fish(interaction: CommandInteraction, player: Player) {
+  private async fish(interaction: CommandInteraction, player: Player) {
     const timer = new GameTimer(FISH_TIME);
     this.join(player, { timer });
 
-    player.hud.loadActivityStart(interaction);
+    await player.hud.loadActivityUpdate("You cast your line...", interaction);
 
     timer.startTimer(() => {
+      let caught = false;
+
       if (this.tickets === 0 || Math.random() > this.chance + this.chanceModifier) { 
-        this.chanceModifier += 0.01;
+        this.chanceModifier += 0.05;
       } else {
         this.chanceModifier = 0;
         this.tickets -= 1;
         player.inventory.addTickets = 1;
+        caught = true;
       }
 
-      player.hud.loadActivityDone();
-
       this.leave(player);
+      player.hud.loadActivityUpdate(caught ? "Congrats, you catch a fish!" : "Not so lucky this time... Recast your line?");
     }, FISH_TIME);
   }
 
@@ -81,7 +82,7 @@ export class Fish extends GameActivity {
 
 
 
-  private rock(interaction: CommandInteraction, player: Player) {
+  private async rock(interaction: CommandInteraction, player: Player) {
     const timer = new GameTimer(ROCK_TIME);
     this.join(player, { timer });
     
@@ -93,21 +94,20 @@ export class Fish extends GameActivity {
       else { curModifier = this.chanceModifier; this.chanceModifier -= curModifier; }
     }
 
-    player.hud.loadActivityStart(interaction);
+    await player.hud.loadActivityUpdate("You threw a rock...", interaction);
 
-    this.location.players.forEach((otherPlayer, id) => {
+    for (const [id, otherPlayer] of this.location.players) {
       if (player != otherPlayer)
-        otherPlayer.hud.loadActivityNotify();
-    });
+        otherPlayer.hud.loadAlert("Skadoosh", "You hear a rock skip across the water...\nThis fish scour in fear.");
+    }
 
 
     timer.startTimer(() => {
       this.chanceModifier += curModifier;
       this.chance += CATCH_CHANCE;
 
-      player.hud.loadActivityDone();
-
       this.leave(player);
+      player.hud.loadActivityUpdate(null);
     }, ROCK_TIME);
   }
 }

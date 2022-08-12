@@ -47,7 +47,6 @@ export const help = {
 
 
 
-
 //HEAD Region Post https://imgur.com/a/rJVekd0
 //HEAD Route Post https://imgur.com/a/pK2koPU
 //HEAD Route Gif Post https://giphy.com/channel/Tye13
@@ -59,8 +58,8 @@ export const graph = {
       this.region = new Region(
         game,
         channel,
-        "In the ruins of an ancient citadel, a dragon stares down at you. You, standing small amongst the stones and smell of sulfur.",
         "https://i.imgur.com/lCeXqiq.png",
+        "In the ruins of an ancient citadel, a dragon stares down at you. You, standing small amongst the stones and smell of sulfur.",
         "https://i.pinimg.com/originals/23/95/54/2395544bff0ddf8217c28c645cf604e5.gif",
         "#84D7FE",
         { id: "980211449710411776", name: "lair" },

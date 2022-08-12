@@ -26,7 +26,7 @@ export default {
     // }
 
     await interaction.reply({ content: "Game start initiated..." });
-    game.start();
+    await game.start();
     await interaction.deleteReply();
   },
 };

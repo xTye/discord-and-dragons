@@ -6,11 +6,14 @@ export class ScrollItem extends GameItem {
   constructor(
     player: Player,
     name: string,
+    id: string,
     description: string,
     picture: string,
     emoji: APIMessageComponentEmoji,
-    func: (interaction: CommandInteraction) => Promise<GameItem | undefined>, 
+    targetable: boolean,
+    func: () => Promise<GameItem | undefined>,
+    quantity?: number,
   ) {
-    super(player, `${name} Scroll`, description, picture, emoji, func)
+    super(player, `${name} Scroll`, id, description, picture, emoji, targetable, func, quantity)
   }
 }

@@ -15,7 +15,7 @@
     "@discordjs/rest": "^0.4.1",
     "@discordjs/voice": "^0.9.0",
     "discord-rpc": "^4.0.1",
-    "discord.js": "^14.0.0-dev.1651493371-4ba0f56",
+    "discord.js": "^14.1.2",
     "dotenv": "^16.0.0",
     "express": "^4.18.1",
     "nodemon": "^2.0.15"

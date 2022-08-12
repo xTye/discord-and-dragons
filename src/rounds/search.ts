@@ -5,6 +5,7 @@ import { GameTimer } from "../lib/timer";
 const SEARCH_TIME = GameTimer.fiveMin;
 
 export class SearchRound extends GameRound {
+  nameRound: string = "Search";
   
   constructor(game: Game, time?: number) {
     super(game, time ? time : SEARCH_TIME);
@@ -19,7 +20,7 @@ export class SearchRound extends GameRound {
     };
 
     for (const [id, player] of this.game.players) {
-      await player.hud.loadRoundStart();
+      await player.hud.loadSearchRound();
     };
     
     this.loading = false;

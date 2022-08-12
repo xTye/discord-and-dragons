@@ -5,11 +5,13 @@ import { PlayerUI } from "./ui/player";
 import { HelpUI } from "./ui/help";
 import { ActivityUI } from "./ui/activity";
 import { InventoryUI } from "./ui/inventory";
+import { AlertUI } from "./ui/alert";
 import { GameUI } from "./ui";
 import { GameTimer } from "../lib/timer";
 import { Game } from "../game";
+import { GameActivity } from "../activities";
 
-const TIMEOUT_BUFFER = GameTimer.twoSec;
+const TIMEOUT_BUFFER = GameTimer.fiveSec;
  
 export class GameHUD {
   loading: boolean;
@@ -19,7 +21,6 @@ export class GameHUD {
   private ui: GameUI;
   private pui: PlayerUI;
   private aui?: ActivityUI;
-  private iui?: InventoryUI;
 
   message: Message;
 
@@ -42,9 +43,11 @@ export class GameHUD {
     await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
 
     this.renderPUI = setInterval(async () => {
-      if (!this.loading && !this.rendering) {
+      this.pui.loadTimers();
+      this.aui?.loadTimers();
+
+      if (!this.loading && !this.rendering && (this.pui === this.ui || this.aui)) {
         this.rendering = true;
-        this.ui.loadTimers();
         this.message = await this.message.edit({ embeds: [this.ui.embed], components: [...this.ui.actionrows] });
         this.rendering = false;
       }
@@ -74,8 +77,13 @@ export class GameHUD {
   async loadHelp(interaction: CommandInteraction) {
     this.loading = true;
     this.ui = new HelpUI(this.id);
-    this.ui.load();
     this.render(interaction);
+    this.loading = false;
+  }
+
+  loadStart() {
+    this.loading = true;
+    this.pui.loadStart();
     this.loading = false;
   }
 
@@ -90,17 +98,18 @@ export class GameHUD {
     this.loading = false;
   }
 
-  async loadReady(interaction: CommandInteraction) {
+  async loadReady() {
     this.loading = true;
-    this.pui.load();
-    this.render(interaction);
+    this.pui.loadReady();
     this.loading = false;
   }
 
-  async loadModalDescription() {
-    this.loading = true;
-    loadModal
-    this.loading = false;
+  async loadModalDescription(interaction: CommandInteraction) {
+    await this.pui.loadModalDescription(interaction);
+  }
+
+  async loadVoteModal(interaction: CommandInteraction) {
+    await this.pui.loadVoteModal(interaction);
   }
 
   /**
@@ -115,6 +124,13 @@ export class GameHUD {
     this.loading = false;
   }
 
+  async loadSetDestination() {
+    this.loading = true;
+    this.pui.loadSetDestination();
+    await this.render();
+    this.loading = false;
+  }
+
   async loadMoveError() {
     this.loading = true;
     this.ui = new HelpUI(this.id);
@@ -122,7 +138,7 @@ export class GameHUD {
     if (this.ui instanceof HelpUI)
       this.ui.loadSync();
 
-    this.render();
+    await this.render();
     this.loading = false;
   }
 
@@ -135,26 +151,55 @@ export class GameHUD {
     this.loading = false;
   }
 
-  async searchRound() {
+  //# PLEASE NOTE THAT AUI BECOMES UNDEFINED HERE
+  async loadTraveling(interaction?: CommandInteraction) {
     this.loading = true;
-    this.pui.searchRound();
+    this.aui = undefined;
+    this.pui.loadTraveling();
+    await this.renderPlayerUI(interaction);
+    this.loading = false;
+  }
+
+  //# PLEASE NOTE THAT AUI BECOMES UNDEFINED HERE
+  async loadTraveled(interaction?: CommandInteraction) {
+    this.loading = true;
+    this.aui = undefined;
+    this.pui.loadTraveled();
+    await this.renderPlayerUI(interaction);
+    this.loading = false;
+  }
+
+  async loadItemSelect(player: Player) {
+    this.loading = true;
+    if (!(this.ui instanceof InventoryUI))
+      this.ui = new InventoryUI(this.id, player);
+    
+    this.ui.load();
+
     await this.render();
     this.loading = false;
   }
 
-  async loadTravel(interaction?: CommandInteraction) {
+  async loadItemConsume() {
     this.loading = true;
-    //await this.loadPlayerUI(interaction);
+    await this.renderPlayerUI();
     this.loading = false;
   }
 
-  async loadItemSelect() {
+  async loadCancelAlert()  {
     this.loading = true;
+    if (this.ui instanceof AlertUI)
+      this.ui = this.ui.previous;
+    else
+      this.ui = this.pui;
+    
+    await this.render();
     this.loading = false;
   }
 
-  async loadItemConsume(interaction?: CommandInteraction) {
+  loadInventory() {
     this.loading = true;
+    this.pui.updateVariables();
     this.loading = false;
   }
 
@@ -163,6 +208,60 @@ export class GameHUD {
 //HEAD Events by game
 //# =================
 
+  async loadAlert(title: string, description: string, interaction?: CommandInteraction) {
+    this.loading = true;
+    this.ui = new AlertUI(this.id, this.ui);
+
+    if (this.ui instanceof AlertUI)
+      this.ui.loadAlert(title, description);
+
+    await this.render(interaction);
+    this.loading = false;
+  }
+
+  async loadItemAlert(title: string, description: string) {
+    this.loading = true;
+    this.ui = new AlertUI(this.id, this.pui);
+
+    if (this.ui instanceof AlertUI)
+      this.ui.loadAlert(title, description);
+
+    await this.render();
+    this.loading = false;
+  }
+
+  async loadRoundEnd() {
+    this.loading = true;
+    //this.pui.loadRoundEnd();
+    await this.render();
+    this.loading = false;
+  }
+
+  //# This will be implimented in the future, but for
+  //# temporary push for a finish, the rounds will be
+  //# called seperately.
+  // async loadRoundStart() {
+  //   this.loading = true;
+  //   this.pui.loadRoundStart();
+  //   await this.render();
+  //   this.loading = false;
+  // }
+
+  async loadSearchRound() {
+    this.loading = true;
+    this.pui.loadSearchRound();
+    await this.renderPlayerUI();
+    this.loading = false;
+  }
+
+  async loadVoteRound() {
+    this.loading = true;
+    this.aui = undefined;
+    this.pui.loadVoteRound();
+    await this.renderPlayerUI();
+    this.loading = false;
+  }
+
   async loadVoteUpdate() {
     this.loading = true;
     this.pui.loadVoteUpdate();
@@ -170,30 +269,9 @@ export class GameHUD {
     this.loading = false;
   }
 
-  async loadRoundEnd() {
-    this.loading = true;
-    this.pui.loadRoundEnd();
-    await this.render();
-    this.loading = false;
-  }
-
-  async loadRoundStart() {
-    this.loading = true;
-    this.pui.loadRoundStart();
-    await this.render();
-    this.loading = false;
-  }
-
-  async loadRoundUpdate() {
-    this.loading = true;
-    this.pui.loadRoundUpdate();
-    await this.render();
-    this.loading = false;
-  }
-
   async loadGameResults() {
     this.loading = true;
-    this.pui.loadGameResults();
+    //this.pui.loadGameResults();
     await this.render();
     this.loading = false;
   }
@@ -202,45 +280,51 @@ export class GameHUD {
 //HEAD Events by activity
 //# =====================
 
-  async loadActivityUI() {
+  async loadActivityUI(player: Player, activity: GameActivity, interaction?: CommandInteraction) {
     this.loading = true;
-    this
+    if (!this.aui)
+      this.aui = new ActivityUI(this.id, player, activity);
+
+    this.ui = this.aui;
+    await this.render(interaction);
     this.loading = false;
   }
 
-  async loadActivityUpdate(interaction?: CommandInteraction) {
+  async loadActivityUpdate(message: string | null, interaction?: CommandInteraction) {
     this.loading = true;
     if (this.aui) {
-      this.aui.loadActivityUpdate();
+      this.aui.loadActivityUpdate(message);
       await this.render(interaction);
     }
     this.loading = false;
   }
 
-  async loadActivityStart() {
+  async loadActivityLeave(interaction?: CommandInteraction) {
     this.loading = true;
-    if (this.aui) {
-      this.aui.loadActivityStart();
-      await this.render();
+    this.aui?.loadActivityUpdate(null);
+    await this.render(interaction);
+    this.loading = false;
+  }
+
+  async loadActivityModal(player: Player, activity: GameActivity, interaction: CommandInteraction) {
+    this.loading = true;
+    if (this.aui)
+      await this.aui.loadActivityModal(interaction);
+    else {
+      this.aui = new ActivityUI(this.id, player, activity);
+      await this.aui.loadActivityModal(interaction);
     }
     this.loading = false;
   }
 
-  async loadActivityError() {
+  async loadActivityForce(player: Player, activity: GameActivity, message: string) {
     this.loading = true;
-    if (this.aui) {
-      this.aui.loadActivityError();
-      await this.render();
-    }
-    this.loading = false;
-  }
+    if (!this.aui)
+      this.aui = new ActivityUI(this.id, player, activity);
 
-  async loadActivityEnd() {
-    this.loading = true;
-    if (this.aui) {
-      this.aui.loadActivityStart();
-      await this.render();
-    }
+    this.aui.loadActivityUpdate(message);
+    this.ui = this.aui;
+    await this.render();
     this.loading = false;
   }
 

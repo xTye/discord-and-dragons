@@ -1,5 +1,5 @@
 import { playersCategory, PLAYER_ROLE_ID, CUSTOM_PLAYER_EMOJI } from "./lib/conts";
-import { APIMessageComponentEmoji, ChannelType, Collection, CommandInteraction, GuildMember, PermissionFlagsBits, Snowflake, TextChannel } from "discord.js";
+import { APIMessageComponentEmoji, APISelectMenuOption, ChannelType, Collection, CommandInteraction, GuildMember, PermissionFlagsBits, Snowflake, TextChannel } from "discord.js";
 import { Player } from "./player";
 import { Region } from "./locations/region";
 import { Route } from "./locations/route";
@@ -9,12 +9,11 @@ import { GameRound } from "./rounds/index";
 import { SearchRound } from "./rounds/search";
 import { VoteRound } from "./rounds/vote";
 import { ReadyRound } from "./rounds/ready";
-import { game } from ".";
 
 
 export const MAX_PLAYERS = 8;
-const MIN_PLAYERS_LEFT = 3;
-const MAX_ROUNDS = 2;
+const MIN_PLAYERS_LEFT = 0;
+const MAX_ROUNDS = 4;
 
 type GameEvent = {
   func: () => {};
@@ -32,11 +31,13 @@ export class Game {
   rounds: number;
   locationStart?: GameLocation;
   locationVote?: GameLocation;
+  readyQueue: Array<boolean>;
   regions: Collection<Snowflake, Region>;
   routes: Collection<Snowflake, Route>;
   players: Collection<Snowflake, Player>;
   mutedPlayers: Collection<Snowflake, Player>;
   immunePlayers: Collection<Snowflake, Player>;
+  selections: APISelectMenuOption[];
 
   constructor() {
     this.looping = false;
@@ -45,11 +46,13 @@ export class Game {
     this.started = false;
     this.round = new ReadyRound(this);
     this.rounds = 0;
+    this.readyQueue = new Array<boolean>();
     this.regions = new Collection<Snowflake, Region>();
     this.routes = new Collection<Snowflake, Route>();
     this.players = new Collection<Snowflake, Player>();
     this.mutedPlayers = new Collection<Snowflake, Player>();
     this.immunePlayers = new Collection<Snowflake, Player>();
+    this.selections = [];
   }
 
   addRegion(region: Region, locationStart?: GameLocation, locationVote?: GameLocation) {
@@ -67,6 +70,14 @@ export class Game {
     this.locationVote = locationVote;
   }
 
+  updatePlayerSelections() {
+    this.selections = [];
+
+    for (const [id, player] of this.players) {
+      this.selections.push(player.selection);
+    }
+  }
+
   async removePlayer(player: Player) {
     this.players.delete(player.user.id);
 
@@ -75,59 +86,24 @@ export class Game {
 
     if (this.round instanceof VoteRound) {
       for (const [id, player] of this.players) {
-        player.hud.loadVoteUpdate();
+       player.hud.loadVoteUpdate();
       }
     }
   }
 
-  eventloop() {
-    this.loop = setInterval(async () => {
-      if (!this.looping) {
-
-        this.looping = true;
-        const newTimers: GameTimer[] = [];
-    
-        while (!timers.empty) {
-          const timer = timers.pop();
-          timer.updateTime();
-    
-          if (timer.timeElapsed > timer.timeFinished)
-            events.push(timer.func());
-          else
-            newTimers.push(timer);
-        }
-    
-        timers = newTimers;
-    
-        while (!events.empty) {
-          const event = events.pop();
-          if (event.interaction)
-            await interaction.reply({ content: "Loading..." });
-          
-          await event.func();
-          
-          if (event.interaction)
-            await interaction.deleteReply();
-        }
-    
-        this.looping = false;
-    
-      }
-    }, 100);
-  }
-
-  start() {
-    this.players.forEach((player, id) => {
+  async start() {
+    for (const [id, player] of this.players) {
       player.field.name = "___";
-    });
+      player.hud.loadStart();
+    }
 
-    this.round = new SearchRound(this);
+    await this.newRound();
 
-    this.newRound();
+    this.started = true;
   }
 
   async newRound() {
-    if (this.players.size <= MIN_PLAYERS_LEFT) {
+    if (this.players.size <= MIN_PLAYERS_LEFT || this.rounds >= MAX_ROUNDS) {
       for (const [id, player] of this.players) {
         await player.hud.loadGameResults();
       };
@@ -137,11 +113,11 @@ export class Game {
     this.rounds++;
 
     if (this.rounds % 2 == 1) {
-      this.round = new SearchRound(game);
+      this.round = new SearchRound(this);
     } else if (this.rounds % 4 == 0) {
-      this.round = new VoteRound(game, false);
+      this.round = new VoteRound(this, false);
     } else {
-      this.round = new VoteRound(game, true);
+      this.round = new VoteRound(this, true);
     }
 
     await this.round.start();
@@ -175,7 +151,8 @@ export class Game {
     let channel: TextChannel;
 
     try {
-      channel = await playersCategory.channel.children.create(`${name}s-hud`, {
+      channel = await playersCategory.channel.children.create({
+        name: `${name}s-hud`,
         type: ChannelType.GuildText,
         permissionOverwrites: [
           {
@@ -201,7 +178,7 @@ export class Game {
 
     try {
       const emojiName = CUSTOM_PLAYER_EMOJI + '_' + user.id;
-      const ret = await user.guild.emojis.create(user.displayAvatarURL(), emojiName);
+      const ret = await user.guild.emojis.create({ attachment: user.displayAvatarURL(), name: emojiName });
       emoji = { id: ret.id, name: emojiName };
     } catch (err) {
       console.log("Could not create custom emoji for " + name);
@@ -211,14 +188,17 @@ export class Game {
     const player: Player = new Player(this, user, channel, emoji, this.locationStart);
 
     this.players.set(player.user.id, player);
+    this.updatePlayerSelections();
     await player.user.roles.add(PLAYER_ROLE_ID);
     await player.hud.init();
+
     try{
       await player.user.voice.setSuppressed(false);
     } catch (err) {
       console.log(player.name + " could not unsupressed.");
       await player.hud.loadMoveError();
     }
+
     await interaction.reply({ content: "A new channel has been created for you, please use this channel for all things command related.", ephemeral: true });
     console.log(`${player.name} has joined the game.`);
   }
